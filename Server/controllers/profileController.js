@@ -14,7 +14,7 @@ export const getProfile = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const allowed = ["name","phone","skills","education","experience"];
+    const allowed = ["name","companyName","phone","skills","education","experience"];
     const update = {};
     for (const k of allowed) if (req.body[k] !== undefined) update[k] = req.body[k];
     if (update.skills && typeof update.skills === "string") update.skills = update.skills.split(",").map(s=>s.trim()).filter(Boolean);

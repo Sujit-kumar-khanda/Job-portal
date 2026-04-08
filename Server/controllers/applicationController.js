@@ -51,7 +51,14 @@ export const getMyApplications = async (req, res) => {
   try {
     const seekerId = req.user.id;
     const apps = await Application.find({ seeker: seekerId })
-      .populate({ path: "job", select: "title location salary postedBy" })
+      .populate({ 
+        path: "job", 
+        select: "title location salary postedBy", // Grab job details
+        populate: {
+          path: "postedBy", // DEEP POPULATE: Go inside the job and get the employer
+          select: "name companyName profilePhoto" // Get the company name and logo
+        }
+      })
       .sort({ createdAt: -1 });
     res.json({ applications: apps });
   } catch (err) {

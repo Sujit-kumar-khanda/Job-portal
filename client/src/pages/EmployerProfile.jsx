@@ -1,5 +1,4 @@
-// EmployerProfile.jsx
-import { User, Edit, Camera, Mail, Image as ImageIcon } from "lucide-react";
+import { User, Edit, Camera, Mail, Image as ImageIcon, Building2 } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { useEmployerProfile } from "../components/hooks/employerHooks/useEmployerProfile";
 
@@ -26,7 +25,7 @@ export default function EmployerProfile() {
 
   return (
     <div className="pt-20 min-h-screen bg-linear-to-br from-indigo-100 via-white to-blue-100">
-      <div className="  max-w-2xl mx-auto bg-white rounded-3xl shadow-xl p-8 mt-6">
+      <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-xl p-8 mt-6">
         {/* HEADER */}
         <div className="mb-6">
           <h2 className="text-2xl font-bold">Employer Profile</h2>
@@ -49,10 +48,20 @@ export default function EmployerProfile() {
         {/* EDIT MODE */}
         {mode === "edit" && (
           <form onSubmit={handleSave} className="space-y-6">
+            
+            {/* ⬇️ NEW: Company Name Input */}
+            <input
+              name="companyName"
+              placeholder="Company Name (e.g., Google, Amazon)"
+              value={form.companyName || ""}
+              onChange={handleOnchange}
+              className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-400 outline-none"
+            />
+
             <input
               name="name"
-              placeholder="Company Name"
-              value={form.name}
+              placeholder="Your Full Name (Recruiter)"
+              value={form.name || ""}
               onChange={handleOnchange}
               className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-400 outline-none"
             />
@@ -61,7 +70,7 @@ export default function EmployerProfile() {
               name="email"
               type="email"
               placeholder="Company Email"
-              value={form.email}
+              value={form.email || ""}
               onChange={handleOnchange}
               className="w-full p-4 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-400 outline-none"
             />
@@ -125,22 +134,27 @@ export default function EmployerProfile() {
         {mode === "details" && (
           <div className="space-y-8">
             {/* HEADER SECTION */}
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-2xl bg-gray-100 flex items-center justify-center overflow-hidden relative">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
+              <div className="w-24 h-24 rounded-2xl bg-gray-100 flex items-center justify-center overflow-hidden relative border border-gray-200 shrink-0">
                 {savedProfile.profilePhoto ? (
                   <img
                     src={`${baseURL}${savedProfile.profilePhoto}`}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover bg-white"
+                    alt="Company Logo"
                   />
                 ) : (
-                  <ImageIcon className="w-12 h-12 text-gray-400" />
+                  <Building2 className="w-10 h-10 text-gray-400" />
                 )}
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">
-                  {savedProfile.name}
+              <div className="flex flex-col justify-center h-full pt-1">
+                {/* ⬇️ NEW: Show Company Name */}
+                <h3 className="text-3xl font-bold text-gray-900">
+                  {savedProfile.companyName || "No Company Name Set"}
                 </h3>
-                <p className="text-indigo-600 font-semibold mt-1">
+                <p className="text-gray-600 font-medium mt-1">
+                  Recruiter: {savedProfile.name}
+                </p>
+                <p className="text-indigo-600 font-semibold">
                   {savedProfile.email}
                 </p>
               </div>

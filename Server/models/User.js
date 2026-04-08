@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ["employer", "seeker"], default: "seeker" },
 
     // profile fields
+    companyName: { type: String, default: "" }, // 👈 ADDED THIS!
     phone: { type: String, default: "" },
     skills: { type: [String], default: [] },
     education: { type: String, default: "" },

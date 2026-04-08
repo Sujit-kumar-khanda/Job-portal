@@ -101,48 +101,37 @@ export const getMe = async (req, res) => {
 /* FORGOT PASSWORD */
 export const forgotPassword = async (req, res) => {
   try {
-    console.log("🔥 Forgot password endpoint HIT");
-
     const { email } = req.body;
-    console.log("📥 Request Body Email:", email);
 
     const user = await User.findOne({ email });
-    console.log("🔍 User Found:", user ? user.email : "NO");
-
     if (!user) {
-      console.log("❌ User not found");
-      return res.status(400).json({ message: "User not found" });
+      // Return generic message to prevent user enumeration
+      return res.json({ message: "If that email exists, a reset link has been sent." });
     }
 
-    console.log("🧪 Generating reset token...");
     const resetToken = crypto.randomBytes(20).toString("hex");
-    console.log("🔑 Raw Reset Token:", resetToken);
 
     const hashedToken = crypto
       .createHash("sha256")
       .update(resetToken)
       .digest("hex");
-    console.log("🔐 Hashed Token:", hashedToken);
 
     user.resetPasswordToken = hashedToken;
     user.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
 
-    console.log("⏳ Expire Time:", user.resetPasswordExpire);
-    console.log("💾 Saving user to DB...");
-
     await user.save();
-    console.log("✅ User Saved Successfully!");
 
     const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    console.log("🔗 Reset URL:", resetURL);
 
+    // TODO: Send resetURL via email (nodemailer). For development, returning it directly.
     return res.json({
       message: "Password reset link sent!",
-      resetURL
+      // Remove resetURL from response in production - send via email instead
+      resetURL,
     });
 
   } catch (error) {
-    console.error("❌ ERROR in forgotPassword:", error);
+    console.error("ERROR in forgotPassword:", error);
     return res.status(500).json({ message: "Something went wrong" });
   }
 };

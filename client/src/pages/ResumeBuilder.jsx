@@ -1,653 +1,87 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import {
-  FaPlus,
-  FaDownload,
-  FaEdit,
-  FaTrash,
-  FaFilePdf,
-  FaProjectDiagram,
-} from "react-icons/fa";
-import html2canvas from "html2canvas-pro";
-import { jsPDF } from "jspdf";
+import { useRef } from "react";
+import { useReactToPrint } from "react-to-print";
+import { useResume } from "../components/hooks/resumebuilerHookes/useResume";
+import ResumeForm from "../components/resumeSkeleton/ResumeForm";
+import ResumePreview from "../components/resumeSkeleton/ResumePreview";
+import { Download, Sparkles, Layout } from "lucide-react";
 
-const ResumeBuilder = () => {
-  const [resume, setResume] = useState({
-    personal: {
-      name: "",
-      email: "",
-      phone: "",
-      location: "Chennai, Tamil Nadu",
-    },
-    summary: "",
-    experience: [{ company: "", role: "", dates: "", desc: "" }],
-    education: [{ school: "", degree: "", dates: "" }],
-    projects: [{ name: "", desc: "", tech: "", link: "" }],
-    skills: [""],
-  });
+const BuilderPage = () => {
+  const { register, experience, projects, skills, data } = useResume();
   const previewRef = useRef();
 
-  const addSection = useCallback((type) => {
-    setResume((prev) => {
-      if (type === "experience") {
-        return {
-          ...prev,
-          experience: [
-            ...prev.experience,
-            { company: "", role: "", dates: "", desc: "" },
-          ],
-        };
-      } else if (type === "education") {
-        return {
-          ...prev,
-          education: [...prev.education, { school: "", degree: "", dates: "" }],
-        };
-      } else if (type === "projects") {
-        return {
-          ...prev,
-          projects: [
-            ...prev.projects,
-            { name: "", desc: "", tech: "", link: "" },
-          ],
-        };
-      } else if (type === "skills") {
-        return { ...prev, skills: [...prev.skills, ""] };
-      }
-      return prev;
-    });
-  }, []);
-
-  const updateField = useCallback((section, index, field, value) => {
-    setResume((prev) => {
-      const newResume = { ...prev };
-      if (section === "skills") {
-        newResume.skills[index] = value;
-      } else if (newResume[section] && newResume[section][index]) {
-        newResume[section][index][field] = value;
-      }
-      return newResume;
-    });
-  }, []);
-
-  const removeSection = useCallback((section, index) => {
-    setResume((prev) => {
-      const newResume = { ...prev };
-      if (newResume[section] && newResume[section][index]) {
-        newResume[section].splice(index, 1);
-        if (newResume[section].length === 0) {
-          if (section === "experience") {
-            newResume[section] = [
-              { company: "", role: "", dates: "", desc: "" },
-            ];
-          } else if (section === "education") {
-            newResume[section] = [{ school: "", degree: "", dates: "" }];
-          } else if (section === "projects") {
-            newResume[section] = [{ name: "", desc: "", tech: "", link: "" }];
-          } else if (section === "skills") {
-            newResume[section] = [""];
-          }
-        }
-      }
-      return newResume;
-    });
-  }, []);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const nameInput = document.querySelector(
-        'input[placeholder="Full Name"]',
-      );
-      if (nameInput) nameInput.focus();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const downloadPDF = useCallback(async () => {
-    const element = previewRef.current;
-    if (!element || !(element instanceof HTMLElement)) {
-      alert("Preview not ready. Please wait and try again.");
-      return;
-    }
-
-    try {
-      // Temporarily optimize for PDF capture
-      const originalStyles = {
-        border: element.style.border,
-        boxShadow: element.style.boxShadow,
-        padding: element.style.padding,
-      };
-
-      element.style.border = "none";
-      element.style.boxShadow = "none";
-      element.style.padding = "24px";
-      element.style.margin = "0";
-
-      const canvas = await html2canvas(element, {
-        scale: 2.5,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        width: 595,
-        height: 842,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: 595,
-        windowHeight: 842,
-        allowTaint: true,
-      });
-
-      // Restore styles
-      Object.entries(originalStyles).forEach(([key, value]) => {
-        element.style[key] = value;
-      });
-
-      const imgData = canvas.toDataURL("image/png", 1.0);
-      const pdf = new jsPDF("p", "pt", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      const imgWidth = pdfWidth;
-      let imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      // Scale to fit A4 perfectly
-      if (imgHeight > pdfHeight) {
-        imgHeight = pdfHeight * 0.95;
-      }
-
-      const x = (pdfWidth - imgWidth) / 2;
-      const y = (pdfHeight - imgHeight) / 2;
-
-      pdf.addImage(
-        imgData,
-        "PNG",
-        x,
-        y,
-        imgWidth,
-        imgHeight,
-        undefined,
-        "FAST",
-      );
-
-      const timestamp = new Date()
-        .toISOString()
-        .slice(0, 19)
-        .replace(/:/g, "-");
-      const filename = `${resume.personal.name.trim() || "resume"}-${timestamp}.pdf`;
-
-      pdf.save(filename);
-    } catch (error) {
-      console.error("Download failed:", error);
-      alert("Download failed. Please try again.");
-    }
-  }, [resume.personal.name]);
+  // PDF Download Logic
+  const handlePrint = useReactToPrint({
+    contentRef: previewRef,
+    documentTitle: `${data?.personal?.fullName || "Resume"}_ProResume`,
+  });
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            Resume Builder
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Create professional resumes that fit perfectly on A4. Instant PDF
-            export.
-          </p>
+    <div className="flex flex-col lg:flex-row h-screen bg-[#F1F5F9] overflow-hidden font-sans">
+      
+      {/* ── LEFT COLUMN (EDITOR) ── */}
+      <div className="w-full lg:w-[500px] xl:w-[600px] h-full overflow-y-auto bg-white border-r border-slate-200 no-scrollbar shadow-xl z-20">
+        <div className="sticky top-0 bg-white/80 backdrop-blur-md z-30 px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+              ProResume <Sparkles className="w-5 h-5 text-indigo-600 fill-indigo-600" />
+            </h1>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Editor Mode</p>
+          </div>
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <span className="text-[10px] font-bold text-slate-500 uppercase">Auto-saving</span>
+          </div>
         </div>
+        
+        <div className="p-8">
+          <ResumeForm 
+            register={register} 
+            experience={experience} 
+            projects={projects} 
+            skills={skills} 
+          />
+        </div>
+      </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          {/* Form Editor */}
-          <div className="bg-white rounded-3xl shadow-2xl p-8 lg:p-12 sticky top-8 max-h-screen overflow-y-auto">
-            <h2 className="text-3xl font-bold text-gray-800 mb-8 flex items-center">
-              <FaEdit className="mr-3 text-blue-500" /> Edit Resume
-            </h2>
-
-            {/* Personal Info */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <h3 className="text-2xl font-semibold mb-4">Personal Info</h3>
-              <input
-                className="w-full p-4 border border-gray-300 rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Full Name"
-                value={resume.personal.name}
-                onChange={(e) =>
-                  setResume({
-                    ...resume,
-                    personal: { ...resume.personal, name: e.target.value },
-                  })
-                }
-              />
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <input
-                  className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  placeholder="Email"
-                  value={resume.personal.email}
-                  onChange={(e) =>
-                    setResume({
-                      ...resume,
-                      personal: { ...resume.personal, email: e.target.value },
-                    })
-                  }
-                />
-                <input
-                  className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  placeholder="Phone"
-                  value={resume.personal.phone}
-                  onChange={(e) =>
-                    setResume({
-                      ...resume,
-                      personal: { ...resume.personal, phone: e.target.value },
-                    })
-                  }
-                />
+      {/* ── RIGHT COLUMN (PREVIEW WORKSPACE) ── */}
+      <div className="flex-1 relative flex flex-col bg-slate-100/50">
+        
+        {/* Floating Top Tool Bar */}
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30 w-[90%] max-w-2xl">
+          <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-3 shadow-2xl flex items-center justify-between">
+            <div className="flex items-center gap-4 px-4 text-white/70">
+              <div className="flex items-center gap-2">
+                <Layout className="w-4 h-4" />
+                <span className="text-xs font-bold uppercase tracking-tight">Modern Template</span>
               </div>
-              <input
-                className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                placeholder="Location"
-                value={resume.personal.location}
-                onChange={(e) =>
-                  setResume({
-                    ...resume,
-                    personal: { ...resume.personal, location: e.target.value },
-                  })
-                }
-              />
-            </section>
+            </div>
 
-            {/* Summary */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <h3 className="text-2xl font-semibold mb-4">
-                Professional Summary
-              </h3>
-              <textarea
-                className="w-full p-4 border border-gray-300 rounded-xl h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
-                placeholder="Tell us about your experience and goals (keep concise)..."
-                value={resume.summary}
-                onChange={(e) =>
-                  setResume({ ...resume, summary: e.target.value })
-                }
-              />
-            </section>
-
-            {/* Experience - Compact */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-semibold">Experience</h3>
-                <button
-                  onClick={() => addSection("experience")}
-                  className="p-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all flex items-center"
-                >
-                  <FaPlus className="mr-1" /> Add
-                </button>
-              </div>
-              {resume.experience.map((exp, idx) => (
-                <div key={idx} className="mb-4 p-4 bg-gray-50 rounded-xl">
-                  <div className="grid md:grid-cols-2 gap-3 mb-2">
-                    <input
-                      className="p-3 border rounded-lg text-sm"
-                      placeholder="Company"
-                      value={exp.company}
-                      onChange={(e) =>
-                        updateField(
-                          "experience",
-                          idx,
-                          "company",
-                          e.target.value,
-                        )
-                      }
-                    />
-                    <input
-                      className="p-3 border rounded-lg text-sm"
-                      placeholder="Role"
-                      value={exp.role}
-                      onChange={(e) =>
-                        updateField("experience", idx, "role", e.target.value)
-                      }
-                    />
-                  </div>
-                  <input
-                    className="w-full p-3 border rounded-lg mb-2 text-sm"
-                    placeholder="Dates (2020-Present)"
-                    value={exp.dates}
-                    onChange={(e) =>
-                      updateField("experience", idx, "dates", e.target.value)
-                    }
-                  />
-                  <textarea
-                    className="w-full p-3 border rounded-lg h-16 text-sm"
-                    placeholder="Key achievements (3-4 bullet points)"
-                    value={exp.desc}
-                    onChange={(e) =>
-                      updateField("experience", idx, "desc", e.target.value)
-                    }
-                  />
-                  {resume.experience.length > 1 && (
-                    <button
-                      onClick={() => removeSection("experience", idx)}
-                      className="text-red-500 hover:text-red-700 mt-2 flex items-center text-sm"
-                    >
-                      <FaTrash className="mr-1" /> Remove
-                    </button>
-                  )}
-                </div>
-              ))}
-            </section>
-
-            {/* Projects - Compact */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-semibold flex items-center">
-                  <FaProjectDiagram className="mr-2 text-orange-500" /> Projects
-                </h3>
-                <button
-                  onClick={() => addSection("projects")}
-                  className="p-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all flex items-center"
-                >
-                  <FaPlus className="mr-1" /> Add
-                </button>
-              </div>
-              {resume.projects.map((project, idx) => (
-                <div
-                  key={idx}
-                  className="mb-4 p-4 bg-orange-50 rounded-xl border border-orange-100"
-                >
-                  <input
-                    className="w-full p-3 border rounded-lg mb-2 text-sm"
-                    placeholder="Project Name"
-                    value={project.name}
-                    onChange={(e) =>
-                      updateField("projects", idx, "name", e.target.value)
-                    }
-                  />
-                  <textarea
-                    className="w-full p-3 border rounded-lg mb-3 h-16 text-sm"
-                    placeholder="What you built + impact (keep short)"
-                    value={project.desc}
-                    onChange={(e) =>
-                      updateField("projects", idx, "desc", e.target.value)
-                    }
-                  />
-                  <div className="grid md:grid-cols-2 gap-3 mb-2">
-                    <input
-                      className="p-3 border rounded-lg text-sm"
-                      placeholder="Tech Stack"
-                      value={project.tech}
-                      onChange={(e) =>
-                        updateField("projects", idx, "tech", e.target.value)
-                      }
-                    />
-                    <input
-                      className="p-3 border rounded-lg text-sm"
-                      placeholder="Live Link"
-                      value={project.link}
-                      onChange={(e) =>
-                        updateField("projects", idx, "link", e.target.value)
-                      }
-                    />
-                  </div>
-                  {resume.projects.length > 1 && (
-                    <button
-                      onClick={() => removeSection("projects", idx)}
-                      className="text-red-500 hover:text-red-700 flex items-center text-sm"
-                    >
-                      <FaTrash className="mr-1" /> Remove
-                    </button>
-                  )}
-                </div>
-              ))}
-            </section>
-
-            {/* Education - Compact */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-semibold">Education</h3>
-                <button
-                  onClick={() => addSection("education")}
-                  className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all flex items-center"
-                >
-                  <FaPlus className="mr-1" /> Add
-                </button>
-              </div>
-              {resume.education.map((edu, idx) => (
-                <div
-                  key={idx}
-                  className="flex flex-col gap-3 p-4 bg-gray-50 rounded-xl mb-4"
-                >
-                  <input
-                    className="p-3 border rounded-lg text-sm"
-                    placeholder="University/College"
-                    value={edu.school}
-                    onChange={(e) =>
-                      updateField("education", idx, "school", e.target.value)
-                    }
-                  />
-                  <input
-                    className="p-3 border rounded-lg text-sm"
-                    placeholder="Degree, CGPA"
-                    value={edu.degree}
-                    onChange={(e) =>
-                      updateField("education", idx, "degree", e.target.value)
-                    }
-                  />
-                  <input
-                    className="w-full md:w-32 p-3 border rounded-lg text-sm"
-                    placeholder="2020-2024"
-                    value={edu.dates}
-                    onChange={(e) =>
-                      updateField("education", idx, "dates", e.target.value)
-                    }
-                  />
-                  {resume.education.length > 1 && (
-                    <button
-                      onClick={() => removeSection("education", idx)}
-                      className="text-red-500 self-start p-2 hover:text-red-700 text-sm"
-                    >
-                      <FaTrash />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </section>
-
-            {/* Skills - Compact */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-semibold">Skills</h3>
-                <button
-                  onClick={() => addSection("skills")}
-                  className="p-2 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-all flex items-center"
-                >
-                  <FaPlus className="mr-1" /> Add
-                </button>
-              </div>
-              <div className="space-y-3 max-w-md">
-                {resume.skills.map((skill, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all"
-                  >
-                    <input
-                      className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
-                      placeholder="React, Node.js, Python..."
-                      value={skill}
-                      onChange={(e) =>
-                        updateField("skills", idx, "skill", e.target.value)
-                      }
-                    />
-                    {resume.skills.length > 1 && (
-                      <button
-                        onClick={() => removeSection("skills", idx)}
-                        className="p-3 text-red-500 hover:bg-red-100 hover:text-red-700 rounded-xl transition-all flex items-center shadow-sm hover:shadow-md"
-                        title="Remove skill"
-                      >
-                        <FaTrash className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <button
-              onClick={downloadPDF}
-              disabled={!resume.personal.name.trim()}
-              className="w-full bg-linear-to-r from-blue-500 to-purple-600 text-white py-6 rounded-2xl text-xl font-bold hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+            <button 
+              onClick={handlePrint}
+              className="group flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-indigo-500/20"
             >
-              <FaFilePdf className="mr-3" /> Download A4 PDF (Perfect Fit)
+              <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+              <span>Download PDF</span>
             </button>
           </div>
+        </div>
 
-          {/* A4 Preview - PERFECTLY OPTIMIZED FOR SINGLE PAGE */}
-          <div className="bg-white shadow-2xl rounded-3xl p-8 lg:p-12 max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-8 text-gray-800 flex items-center justify-center">
-              <FaDownload className="mr-3 text-green-500" /> A4 Preview
-            </h2>
-            <div
-              ref={previewRef}
-              data-testid="resume-preview"
-              className="bg-white p-4 rounded-2xl border-4 border-gray-200 shadow-2xl print:border-none"
-              style={{
-                width: "595px", // EXACT A4 width
-                height: "842px", // EXACT A4 height
-                margin: "0 auto",
-                boxSizing: "border-box",
-                fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
-                fontSize: "14px",
-                lineHeight: "1.4",
-                overflow: "hidden",
-                padding: "24px",
-              }}
-            >
-              {/* Header */}
-              <div className="text-center border-b pb-2 mb-4">
-                <h1 className="text-3xl font-bold text-gray-800 mb-1 leading-tight">
-                  {resume.personal.name || "Your Name"}
-                </h1>
-                <p className="text-gray-600 text-sm leading-tight">
-                  {resume.personal.email || "email@example.com"} •{" "}
-                  {resume.personal.phone || "phone"} •{" "}
-                  {resume.personal.location}
-                </p>
-              </div>
-
-              {/* Summary - Compact */}
-              {resume.summary.trim() && (
-                <section className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Professional Summary
-                  </h2>
-                  <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                    {resume.summary}
-                  </p>
-                </section>
-              )}
-
-              {/* Projects - Compact */}
-              {resume.projects.some((proj) => proj.name.trim()) && (
-                <section className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Projects
-                  </h2>
-                  {resume.projects.map((proj, idx) =>
-                    proj.name.trim() ? (
-                      <div key={idx} className="mb-3">
-                        <h3 className="font-semibold text-gray-800 text-base mb-1 leading-tight">
-                          {proj.name}
-                        </h3>
-                        <p className="text-orange-600 font-medium mb-1 text-xs">
-                          {proj.tech.trim()}
-                          {proj.link.trim() && (
-                            <>
-                              {" • "}
-                              <a
-                                href={proj.link}
-                                className="text-blue-600 hover:underline"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                View →
-                              </a>
-                            </>
-                          )}
-                        </p>
-                        <p className="text-gray-700 text-xs leading-tight">
-                          {proj.desc}
-                        </p>
-                      </div>
-                    ) : null,
-                  )}
-                </section>
-              )}
-
-              {/* Experience - Compact */}
-              {resume.experience.some((exp) => exp.company.trim()) && (
-                <section className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Experience
-                  </h2>
-                  {resume.experience.map((exp, idx) =>
-                    exp.company.trim() ? (
-                      <div key={idx} className="mb-2">
-                        <h3 className="font-semibold text-gray-800 text-sm leading-tight">
-                          {exp.role.trim()}{" "}
-                          <span className="font-normal">@ {exp.company}</span>
-                        </h3>
-                        <p className="text-blue-600 font-medium text-xs mb-1">
-                          {exp.dates.trim()}
-                        </p>
-                        <p className="text-gray-700 text-xs leading-tight">
-                          {exp.desc}
-                        </p>
-                      </div>
-                    ) : null,
-                  )}
-                </section>
-              )}
-
-              {/* Education - Compact */}
-              {resume.education.some((edu) => edu.school.trim()) && (
-                <section className="mb-2">
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Education
-                  </h2>
-                  {resume.education.map((edu, idx) =>
-                    edu.school.trim() ? (
-                      <div key={idx} className="mb-2">
-                        <h3 className="font-semibold text-gray-800 text-sm leading-tight">
-                          {edu.degree.trim()}
-                        </h3>
-                        <p className="text-gray-600 text-xs">
-                          {edu.school.trim()} • {edu.dates.trim()}
-                        </p>
-                      </div>
-                    ) : null,
-                  )}
-                </section>
-              )}
-
-              {/* Skills - Compact Grid */}
-              {resume.skills.some((skill) => skill.trim()) && (
-                <section>
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Skills
-                  </h2>
-                  <div className="grid grid-cols-5 sm:grid-cols-3 md:grid-cols-7 grid-rows-3 gap-1 pt-1">
-                    {resume.skills.map((skill, idx) =>
-                      skill.trim() ? (
-                        <div
-                          key={idx}
-                          className="    font-medium text-xs text-center "
-                        >
-                          {skill.trim()}
-                        </div>
-                      ) : null,
-                    )}
-                  </div>
-                </section>
-              )}
-            </div>
+        {/* The Paper Preview Canvas */}
+        <div className="flex-1 overflow-auto pt-32 pb-20 px-8 no-scrollbar scroll-smooth">
+          <div className="max-w-[850px] mx-auto transition-all duration-500 ease-in-out hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
+            <ResumePreview data={data} ref={previewRef} />
           </div>
+        </div>
+
+        {/* Zoom/Page Indicator (Visual Polish) */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-4">
+            <div className="bg-white border border-slate-200 px-4 py-2 rounded-full shadow-sm text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                A4 Page View • 100%
+            </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default ResumeBuilder;
+export default BuilderPage;

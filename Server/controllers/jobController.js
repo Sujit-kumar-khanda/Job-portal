@@ -5,19 +5,18 @@ import User from "../models/User.js";
 // Create a job
 export const createJob = async (req, res) => {
   try {
-    const { title, description, location, salary, skills } = req.body;
+    const { title, description, location, salary, skills, jobType, deadline } = req.body;
     const job = await Job.create({
       title,
       description,
       location,
       salary,
+      jobType: jobType || "full-time",
+      deadline: deadline ? new Date(deadline) : undefined,
       skills: Array.isArray(skills)
         ? skills
         : skills
-          ? skills
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean)
+          ? skills.split(",").map((s) => s.trim()).filter(Boolean)
           : [],
       postedBy: req.user.id,
     });
@@ -30,7 +29,7 @@ export const createJob = async (req, res) => {
 // Get all jobs (public)
 export const getAllJobs = async (req, res) => {
   try {
-    const jobs = await Job.find().populate("postedBy", "name email");
+    const jobs = await Job.find().populate("postedBy", "name email companyName profilePhoto");
     res.json({ jobs });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -109,8 +108,8 @@ export const deleteJob = async (req, res) => {
     if (job.postedBy.toString() !== req.user.id)
       return res.status(403).json({ message: "Not allowed" });
 
-    await job.remove();
-    // Optional: Remove related applications
+    await job.deleteOne();
+    // Remove related applications when job is deleted
     await Application.deleteMany({ job: req.params.id });
 
     res.json({ message: "Job deleted" });
@@ -123,7 +122,7 @@ export const getJobById = async (req, res) => {
   try {
     const job = await Job.findById(req.params.id).populate(
       "postedBy",
-      "name email",
+      "name email profilePhoto email",
     );
 
     if (!job) {

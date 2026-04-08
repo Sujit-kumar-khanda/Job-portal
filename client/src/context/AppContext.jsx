@@ -11,6 +11,8 @@ import toast from "react-hot-toast";
 
 const AppContext = createContext();
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 export const AppProvider = ({ children }) => {
   const navigate = useNavigate();
   const [token, setToken] = useState(localStorage.getItem("token") || "");
@@ -19,7 +21,7 @@ export const AppProvider = ({ children }) => {
 
   const api = useMemo(() => {
     const instance = axios.create({
-      baseURL: "http://localhost:5000/api",
+      baseURL: BASE_URL,
     });
 
     instance.interceptors.request.use((config) => {
@@ -33,16 +35,11 @@ export const AppProvider = ({ children }) => {
         if (err.response?.status === 401) {
           const msg = err.response?.data?.message || "Unauthorized request";
           toast.error(msg);
-
-          if (
-            msg.toLowerCase().includes("token expired") ||
-            msg.toLowerCase().includes("invalid token")
-          ) {
-            setToken("");
-            setUser(null);
-            localStorage.removeItem("token");
-            navigate("/login");
-          }
+          // Clear auth state on any 401
+          setToken("");
+          setUser(null);
+          localStorage.removeItem("token");
+          navigate("/login");
         }
         return Promise.reject(err);
       },
@@ -53,7 +50,6 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     if (!token) {
-      setUser(null);
       setLoadingUser(false);
       return;
     }
@@ -64,25 +60,16 @@ export const AppProvider = ({ children }) => {
         setUser(res.data.user);
       } catch (err) {
         console.log("Failed to fetch user:", err.response?.data?.message);
-
-        if (
-          err.response?.data?.message
-            ?.toLowerCase()
-            .includes("token expired") ||
-          err.response?.data?.message?.toLowerCase().includes("invalid token")
-        ) {
-          setToken("");
-          setUser(null);
-          localStorage.removeItem("token");
-          navigate("/login");
-        }
+        setToken("");
+        setUser(null);
+        localStorage.removeItem("token");
       } finally {
         setLoadingUser(false);
       }
     };
 
     fetchUser();
-  }, [token, api, navigate]);
+  }, [token]);  // removed api from deps to avoid infinite loop
 
   const saveToken = (t) => {
     setToken(t);
@@ -109,6 +96,7 @@ export const AppProvider = ({ children }) => {
         toast,
         navigate,
         loadingUser,
+        BASE_URL: BASE_URL.replace("/api", ""),
       }}
     >
       {children}
