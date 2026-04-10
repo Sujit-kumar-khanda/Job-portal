@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema(
 
     // profile fields
     phone: { type: String, default: "" },
+    headline: { type: String, default: "" },
     skills: { type: [String], default: [] },
     education: { type: String, default: "" },
     experience: { type: String, default: "" },

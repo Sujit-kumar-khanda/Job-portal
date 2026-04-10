@@ -129,7 +129,7 @@ export default function EmployerProfile() {
               <div className="w-24 h-24 rounded-2xl bg-gray-100 flex items-center justify-center overflow-hidden relative">
                 {savedProfile.profilePhoto ? (
                   <img
-                    src={`${baseURL}${savedProfile.profilePhoto}`}
+                    src={savedProfile.profilePhoto}
                     className="w-full h-full object-cover"
                   />
                 ) : (

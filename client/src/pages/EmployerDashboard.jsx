@@ -1,166 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../context/AppContext";
 import { PlusCircle, List, Users, Briefcase } from "lucide-react";
+import { useEmployerDashboard } from "../components/hooks/employerHooks/useEmployerDashboard";
 
 export default function EmployerDashboard() {
   const { api, user, loadingUser, toast } = useAppContext();
 
-  const SKILLS = [
-    "JavaScript",
-    "React",
-    "Node.js",
-    "Express",
-    "MongoDB",
-    "HTML",
-    "CSS",
-    "Tailwind CSS",
-    "Redux",
-    "TypeScript",
-    "Next.js",
-    "Python",
-    "Django",
-    "Java",
-    "Spring Boot",
-    "sql",
-    "MySQL",
-    "PostgreSQL",
-    "AWS",
-    "Docker",
-    "Kubernetes",
-    "Git",
-    "CI/CD",
-    "Agile Methodologies",
-    "Problem Solving",
-    "R",
-    "tableau",
-    "Power BI",
-    "Data visualization",
-    "Regression analysis",
-    "java",
-    "c++",
-    "django",
-    "spring boot",
-  ];
+  // ================= CUSTOM HOOK =================
+  const {
+    skillInput, // for skill input field
+    suggestions, // for skill suggestions dropdown
+    selectedSkills, // for storing selected skills as an array of strings
+    active, // "post" or "myjobs"
+    formData, // form data for posting a job
+    jobs, // jobs posted by employer along with applicants
+    loading, // for post job button loading state
+    setActive, // to switch between "post" and "myjobs" views
+    setFormData, // to update form data for posting a job
+    setSelectedSkills, // to update selected skills for a job
 
-  const [skillInput, setSkillInput] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [selectedSkills, setSelectedSkills] = useState([]);
 
-  const [active, setActive] = useState("post");
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    location: "",
-    salary: "",
-    skills: "",
-  });
-
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  /* ================= FETCH JOBS ================= */
-  const fetchJobs = async () => {
-    if (!user || user.role !== "employer") return;
-    try {
-      const res = await api.get("/jobs/employer/applications");
-      setJobs(res.data.jobs || []);
-    } catch (err) {
-      toast.error(
-        err.response?.data?.message || "Failed to fetch applications",
-      );
-    }
-  };
-
-  useEffect(() => {
-    if (!loadingUser && user?.role === "employer") {
-      fetchJobs();
-    }
-  }, [loadingUser, user]);
-
-  // skill input handler with suggestions
-  const handleSkillChange = (e) => {
-    const value = e.target.value;
-    setSkillInput(value);
-
-    if (value.length > 0) {
-      const filtered = SKILLS.filter((skill) =>
-        skill.toLowerCase().includes(value.toLowerCase()),
-      );
-      setSuggestions(filtered);
-    } else {
-      setSuggestions([]);
-    }
-  };
-
-  // add skill to selected list
-  const addSkill = (skill) => {
-    const trimmed = skill.trim(); // remove extra spaces from both ends
-
-    if (!trimmed) return; // ignore empty strings
-
-    // check for duplicates (case-insensitive)
-    setSelectedSkills((prev) => {
-      // some() returns true if any skill in prev matches the new skill (ignoring case)
-      const alreadyExists = prev.some(
-        (s) => s.toLowerCase() === trimmed.toLowerCase(),
-      );
-
-      if (alreadyExists) return prev; // if duplicate, return the original array without adding
-
-      return [...prev, trimmed]; // add new skill if it's not a duplicate
-    });
-
-    setSkillInput("");
-    setSuggestions([]);
-  };
-
-  // remove skill from selected list
-  const removeSkill = (skill) => {
-    setSelectedSkills(selectedSkills.filter((s) => s !== skill));
-  };
-
-  /* ================= POST JOB ================= */
-  const handlePostJob = async (e) => {
-    e.preventDefault();
-    if (!formData.title || !formData.description)
-      return toast.error("Title & description required");
-
-    try {
-      setLoading(true);
-      await api.post("/jobs", {
-        ...formData,
-        skills: selectedSkills.map((s) => s.trim()).filter(Boolean),
-      });
-
-      toast.success("Job posted successfully");
-
-      setFormData({
-        title: "",
-        description: "",
-        location: "",
-        salary: "",
-        skills: "",
-      });
-
-      setActive("myjobs");
-      fetchJobs();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to post job");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /* ================= STATUS UPDATE ================= */
-  const handleStatusChange = async (appId, status) => {
-    try {
-      await api.patch(`/applications/${appId}/status`, { status });
-      toast.success(`Application ${status}`);
-      fetchJobs();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update status");
-    }
-  };
+    // ================= HANDLERS =================
+    handleSkillChange, // to handle changes in skill input and show suggestions
+    addSkill, // to add a skill from suggestions to selected skills
+    removeSkill, // to remove a skill from selected skills
+    handlePostJob, // to handle posting a new job
+    fetchJobs, // to fetch jobs posted by employer along with applicants
+    handleStatusChange, // to handle status change of an application (select/reject)
+  } = useEmployerDashboard(api, user, loadingUser, toast);
 
   if (loadingUser)
     return <p className="pt-28 text-center text-gray-500">Loading...</p>;
@@ -171,7 +38,6 @@ export default function EmployerDashboard() {
         Access denied
       </p>
     );
-
   return (
     <div className="pt-24 min-h-screen bg-linear-to-br from-indigo-100 via-white to-purple-100 flex">
       {/* ================= SIDEBAR ================= */}

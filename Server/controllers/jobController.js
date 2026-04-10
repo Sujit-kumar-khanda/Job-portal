@@ -75,7 +75,11 @@ export const getEmployerApplications = async (req, res) => {
     const result = await Promise.all(
       jobs.map(async (job) => {
         const applications = await Application.find({ job: job._id })
-          .populate("seeker", "name email resume")
+          .populate({
+            path: "seeker",
+            select: "name email resume",  // ✅ Explicitly select resume field
+            match: { resume: { $exists: true, $ne: null } }  // ✅ Only populated seekers with resumes
+          })
           .sort({ createdAt: -1 });
 
         return {
@@ -86,7 +90,7 @@ export const getEmployerApplications = async (req, res) => {
             applicationId: app._id,
             name: app.seeker?.name,
             email: app.seeker?.email,
-            resume: app.resume,
+            resume: app.seeker?.resume,
             status: app.status,
             appliedAt: app.createdAt,
           })),

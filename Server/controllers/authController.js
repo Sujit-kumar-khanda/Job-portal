@@ -12,7 +12,7 @@ const generateToken = (user) => {
       role: user.role,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: "7d" },
   );
 };
 
@@ -26,8 +26,7 @@ export const register = async (req, res) => {
     }
 
     const exists = await User.findOne({ email });
-    if (exists)
-      return res.status(400).json({ message: "User already exists" });
+    if (exists) return res.status(400).json({ message: "User already exists" });
 
     const hashedPassword = bcrypt.hashSync(password, 10);
 
@@ -61,16 +60,14 @@ export const login = async (req, res) => {
     const { email, password, role } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(400).json({ message: "User not found" });
+    if (!user) return res.status(400).json({ message: "User not found" });
 
     if (role !== user.role) {
       return res.status(400).json({ message: "Incorrect role selected" });
     }
 
     const isMatch = bcrypt.compareSync(password, user.password);
-    if (!isMatch)
-      return res.status(400).json({ message: "Invalid password" });
+    if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
     const token = generateToken(user);
 
@@ -136,11 +133,28 @@ export const forgotPassword = async (req, res) => {
     const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
     console.log("🔗 Reset URL:", resetURL);
 
-    return res.json({
-      message: "Password reset link sent!",
-      resetURL
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS?.replace(/\s/g, ""), // Remove whitespace if any
+      },
     });
 
+    await transporter.sendMail({
+      to: user.email,
+      subject: "Password Reset Link",
+      html: `
+    <h3>Password Reset Request</h3>
+    <p>Click below link to reset your password:</p>
+    <a href="${resetURL}">${resetURL}</a>
+    <p>This link expires in 15 minutes.</p>
+  `,
+    });
+
+    return res.json({
+      message: "Password reset link sent to your email",
+    });
   } catch (error) {
     console.error("❌ ERROR in forgotPassword:", error);
     return res.status(500).json({ message: "Something went wrong" });
@@ -150,13 +164,10 @@ export const forgotPassword = async (req, res) => {
 /* RESET PASSWORD */
 export const resetPassword = async (req, res) => {
   try {
-    const { token } = req.params; 
+    const { token } = req.params;
     const { password } = req.body;
 
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user = await User.findOne({
       resetPasswordToken: hashedToken,

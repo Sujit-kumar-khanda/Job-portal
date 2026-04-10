@@ -5,11 +5,13 @@ import SeekerJobs from "./SeekerJobs";
 import SeekerApplications from "./SeekerApplications";
 import ResumeBuilder from "./ResumeBuilder";
 
+
 export default function SeekerDashboard() {
   const [tab, setTab] = useState("profile"); // profile | jobs | applications
 
   const tabs = [
     { key: "profile", label: "Profile", icon: User },
+    {key: "posts", label: "Posts", icon: FileText},
     { key: "jobs", label: "Jobs", icon: Briefcase },
     { key: "resume", label: "Resume Builder", icon: BookOpen },
     { key: "applications", label: "Applications", icon: FileText },
@@ -51,6 +53,7 @@ export default function SeekerDashboard() {
           {/* Content */}
           <div className="animate-fade-in">
             {tab === "profile" && <SeekerProfile />}
+            
             {tab === "jobs" && <SeekerJobs />}
             {tab === "resume" && <ResumeBuilder />}
             {tab === "applications" && <SeekerApplications />}

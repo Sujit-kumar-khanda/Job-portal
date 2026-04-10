@@ -1,56 +1,43 @@
-// hooks/useSeekerProfile.js
 import { useState, useEffect, useCallback } from "react";
 
 const SKILLS = [
-  "JavaScript",
-  "React",
-  "Node.js",
-  "Express",
-  "MongoDB",
-  "HTML",
-  "CSS",
-  "Tailwind CSS",
-  "Redux",
-  "TypeScript",
-  "Next.js",
-  "Python",
-  "Django",
-  "Java",
-  "Spring Boot",
-  "SQL",
-  "MySQL",
-  "PostgreSQL",
-  "AWS",
-  "Docker",
-  "Kubernetes",
-  "Git",
-  "CI/CD",
-  "Agile Methodologies",
-  "Problem Solving",
-  "C++",
+  "JavaScript", "React", "Node.js", "Express", "MongoDB",
+  "HTML", "CSS", "Tailwind CSS", "Redux", "TypeScript",
+  "Next.js", "Python", "Django", "Java", "Spring Boot",
+  "SQL", "MySQL", "PostgreSQL", "AWS", "Docker",
+  "Kubernetes", "Git", "CI/CD", "Agile Methodologies",
+  "Problem Solving", "C++",
 ];
 
 export const useSeekerProfile = (api, _user, setUser, toast) => {
-  const baseURL = "http://localhost:5000";
+  const baseURL = import.meta?.env?.VITE_API_URL || "http://localhost:5000";
 
-  // States
-  const [skillInput, setSkillInput] = useState(""); // For skill search input
-  const [suggestions, setSuggestions] = useState([]); // For skill suggestions dropdown
-  const [selectedSkills, setSelectedSkills] = useState([]); // For storing selected skills
-  const [mode, setMode] = useState("details"); // 'details' or 'edit'
-  const [savedProfile, setSavedProfile] = useState(null); // For storing fetched profile data
-  const [uploading, setUploading] = useState(false); // For file upload state
-  const [loading, setLoading] = useState(false); // For profile save state
-  const [isManualEdit, setIsManualEdit] = useState(false); // To track if user has manually edited form to prevent overwriting with fetched data
-  const [fileInputKey, setFileInputKey] = useState(0); // To reset file input after upload
+  const getFileUrl = (path) => {
+    if (!path) return null;
+    return path.startsWith("http")
+      ? path
+      : `${baseURL}${path}`;
+  };
+
+  const [skillInput, setSkillInput] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedSkills, setSelectedSkills] = useState([]);
+  const [mode, setMode] = useState("details");
+  const [savedProfile, setSavedProfile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isManualEdit, setIsManualEdit] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
+    headline: "",
     education: "",
     experience: "",
   });
 
-  // Fetch profile
+  // GET PROFILE
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -64,30 +51,33 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
     fetchProfile();
   }, [api, setUser, toast]);
 
-  // Prefill form
+  // PREFILL
   useEffect(() => {
     if (mode === "edit" && savedProfile && !isManualEdit) {
       setForm({
         name: savedProfile.name || "",
         phone: savedProfile.phone || "",
+        headline: savedProfile.headline || "",
         education: savedProfile.education || "",
         experience: savedProfile.experience || "",
       });
+
       setSelectedSkills(
-        (savedProfile.skills || []).filter((s) => s && s.trim() !== ""),
+        (savedProfile.skills || []).filter((s) => s && s.trim() !== "")
       );
     }
   }, [mode, savedProfile, isManualEdit]);
 
-  // Event handlers
-  const handleOnchange = useCallback(
-    (e) => {
-      setIsManualEdit(true);
-      setForm({ ...form, [e.target.name]: e.target.value });
-    },
-    [form],
-  );
+  // FORM CHANGE
+  const handleOnchange = useCallback((e) => {
+    setIsManualEdit(true);
+    setForm((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  }, []);
 
+  // SKILL SEARCH
   const handleSkillChange = useCallback(
     (e) => {
       setIsManualEdit(true);
@@ -102,11 +92,12 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
       const filtered = SKILLS.filter(
         (skill) =>
           skill.toLowerCase().includes(value.toLowerCase()) &&
-          !selectedSkills.includes(skill),
+          !selectedSkills.includes(skill)
       );
+
       setSuggestions(filtered);
     },
-    [selectedSkills],
+    [selectedSkills]
   );
 
   const addSkill = useCallback((skill) => {
@@ -114,29 +105,27 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
     if (!trimmed) return;
 
     setSelectedSkills((prev) => {
-      const alreadyExists = prev.some(
-        (s) => s.toLowerCase() === trimmed.toLowerCase(),
+      const exists = prev.some(
+        (s) => s.toLowerCase() === trimmed.toLowerCase()
       );
-      if (alreadyExists) return prev;
-      return [...prev, trimmed];
+      return exists ? prev : [...prev, trimmed];
     });
 
     setSkillInput("");
     setSuggestions([]);
   }, []);
 
-  const removeSkill = useCallback(
-    (skill) => {
-      setSelectedSkills(selectedSkills.filter((s) => s !== skill));
-    },
-    [selectedSkills],
-  );
+  const removeSkill = useCallback((skill) => {
+    setSelectedSkills((prev) => prev.filter((s) => s !== skill));
+  }, []);
 
+  // SAVE PROFILE
   const handleSave = useCallback(
     async (e) => {
       e.preventDefault();
 
       if (!form.name.trim()) return toast.error("Name required");
+
       const phoneRegex = /^[0-9]{10}$/;
       if (form.phone && !phoneRegex.test(form.phone.replace(/\D/g, ""))) {
         return toast.error("Enter valid 10-digit phone");
@@ -144,94 +133,76 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
 
       try {
         setLoading(true);
-        const payload = { ...form, skills: selectedSkills };
+
+        const payload = {
+          ...form,
+          skills: selectedSkills,
+        };
+
         const res = await api.post("/profile/update", payload);
+        
 
         setSavedProfile(res.data.user);
         setUser(res.data.user);
         toast.success("Profile updated");
         setMode("details");
-      } catch {
+      } catch (err) {
         toast.error("Update failed");
       } finally {
         setLoading(false);
       }
     },
-    [form, selectedSkills, api, setUser, toast],
+    [form, selectedSkills, api, setUser, toast]
   );
 
-  const handleFileUpload = useCallback(
-    async (e, type) => {
-      const file = e.target.files[0];
-      if (!file) {
-        toast.error("Please select a file");
-        return;
-      }
+  // FILE UPLOAD (FIXED)
+const handleFileUpload = async (e, type) => {
+  const file = e.target?.files?.[0];
+  if (!file) return toast.error("No file selected");
 
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large. Max 5MB allowed");
-        return;
-      }
+  const fd = new FormData();
+  if (type === "resume") {
+  fd.append("resume", file);
+} else {
+  fd.append("photo", file);
+}
 
-      const allowedTypes = {
-        resume: [
-          "application/pdf",
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ],
-        photo: ["image/jpeg", "image/png", "image/jpg"],
-      };
+  const endpoint =
+    type === "resume"
+      ? "/profile/upload-resume"
+      : "/profile/upload-photo";
 
-      if (!allowedTypes[type].includes(file.type)) {
-        toast.error(
-          type === "resume"
-            ? "Please upload PDF or Word document"
-            : "Please upload JPG, PNG, or JPEG image",
-        );
-        return;
-      }
+  try {
+    setUploading(true);
 
-      setUploading(true);
-      setFileInputKey((prev) => prev + 1);
+    const res = await api.post(endpoint, fd); // ✅ FIXED HERE
 
-      try {
-        const fd = new FormData();
-        fd.append(type, file);
-        const endpoint =
-          type === "resume"
-            ? "/profile/upload-resume"
-            : "/profile/upload-photo";
+    const url = res.data.url || res.data.profilePhoto;
 
-        await api.post(endpoint, fd, {
-          timeout: 30000,
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+    setSavedProfile((prev) => ({
+      ...prev,
+      ...(type === "resume"
+        ? { resume: url }
+        : { profilePhoto: url }),
+    }));
 
-        const me = await api.get("/profile/me");
-        const updatedUser = me.data.user;
-        setSavedProfile(updatedUser);
-        setUser(updatedUser);
+    setUser((prev) => ({
+      ...prev,
+      ...(type === "resume"
+        ? { resume: url }
+        : { profilePhoto: url }),
+    }));
 
-        toast.success(
-          `${type.charAt(0).toUpperCase() + type.slice(1)} uploaded successfully!`,
-        );
-      } catch (error) {
-        console.error("Upload error:", error);
-        if (error.code === "ECONNABORTED") {
-          toast.error("Upload timeout. Please try again.");
-        } else if (error.response?.status === 413) {
-          toast.error("File too large. Max 5MB allowed.");
-        } else {
-          toast.error(`Failed to upload ${type}. Please try again.`);
-        }
-      } finally {
-        setUploading(false);
-      }
-    },
-    [api, setUser, toast],
-  );
+    toast.success(`${type} uploaded`);
+  } catch (err) {
+    console.log(err.response?.data || err.message);
+    toast.error(`${type} upload failed`);
+  } finally {
+    setUploading(false);
+  }
+};
 
-  // Computed values
+  // COMPLETENESS
   const completeness = savedProfile
     ? Math.round(
         ([
@@ -242,32 +213,31 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
           savedProfile.experience,
         ].filter(Boolean).length /
           5) *
-          100,
+          100
       )
     : 0;
 
   return {
-    // States
-    mode, // 'details' or 'edit'
-    savedProfile, // Fetched profile data
-    form, // Form state for editing
-    skillInput, // Current skill search input
-    suggestions, // Skill suggestions based on input
-    selectedSkills, // List of selected skills
-    uploading, // File upload state
-    loading, // Profile save state
-    fileInputKey, // Key to reset file input
-    completeness, // Profile completeness percentage
-    baseURL, // Base URL for API calls
+    mode,
+    savedProfile,
+    form,
+    skillInput,
+    suggestions,
+    selectedSkills,
+    uploading,
+    loading,
+    fileInputKey,
+    completeness,
+    baseURL,
 
-    // Actions
-    setMode, // To switch between 'details' and 'edit' mode
-    handleOnchange, // For handling form input changes
-    handleSkillChange, // For handling skill search input changes
-    addSkill, // To add a skill to selectedSkills
-    removeSkill, // To remove a skill from selectedSkills
-    handleSave, // To save profile changes
-    handleFileUpload, // To handle resume/photo uploads
-    setFileInputKey, // To reset file input after upload
+    setMode,
+    handleOnchange,
+    handleSkillChange,
+    addSkill,
+    removeSkill,
+    handleSave,
+    handleFileUpload,
+    setFileInputKey,
+    getFileUrl,
   };
 };

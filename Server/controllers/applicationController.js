@@ -8,23 +8,44 @@ export const applyToJob = async (req, res) => {
     const seekerId = req.user.id;
     const jobId = req.params.jobId;
 
+    // check if job exists
     const job = await Job.findById(jobId);
     if (!job) return res.status(404).json({ message: "Job not found" });
 
+    // prevent applying to own job
     if (job.postedBy.toString() === seekerId)
       return res.status(400).json({ message: "Cannot apply to your own job" });
 
+    // prevent applying twice
     const already = await Application.findOne({ job: jobId, seeker: seekerId });
     if (already) return res.status(400).json({ message: "Already applied" });
 
+   // 🔍 4. Get seeker
     const seeker = await User.findById(seekerId);
-    const resume = seeker?.resume || "";
+    if (!seeker) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // ❗ 5. Ensure resume exists
+    if (!seeker.resume) {
+      return res.status(400).json({
+        message: "Please upload your resume before applying",
+      });
+    }
+    // ✅ 6. Ensure resume is a valid URL (Cloudinary)
+    const isValidUrl = seeker.resume.startsWith("http");
+    if (!isValidUrl) {
+      return res.status(400).json({
+        message: "Invalid resume. Please re-upload your resume.",
+      });
+    }
 
     const newApplication = await Application.create({
       job: jobId,
       seeker: seekerId,
-      resume,
+      resume: seeker.resume || "",
       status: "pending",
+      appliedAt: new Date(),
     });
 
     // Push applicant into Job.applicants
@@ -65,19 +86,60 @@ export const getApplicationsForJob = async (req, res) => {
     const jobId = req.params.jobId;
     const employerId = req.user.id;
 
+    // 🔍 1. Check job exists
     const job = await Job.findById(jobId).populate("postedBy", "_id");
-    if (!job) return res.status(404).json({ message: "Job not found" });
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
 
-    if (job.postedBy._id.toString() !== employerId)
+    // 🔐 2. Check ownership
+    if (job.postedBy._id.toString() !== employerId) {
       return res.status(403).json({ message: "Not authorized" });
+    }
 
-    const apps = await Application.find({ job: jobId })
-      .populate({ path: "seeker", select: "name email resume profilePhoto" })
+    // 📥 3. Get applications
+    const applications = await Application.find({ job: jobId })
+      .populate({
+        path: "seeker",
+        select: "name email resume profilePhoto",
+      })
       .sort({ createdAt: -1 });
 
-    res.json({ applications: apps });
+    // 🔥 4. Normalize data (CLOUDINARY SAFE)
+    const formattedApplications = applications.map((app) => {
+      let resume = app.seeker?.resume || "";
+      let profilePhoto = app.seeker?.profilePhoto || "";
+
+      // ✅ If NOT cloudinary → ignore (or fallback)
+      if (resume && !resume.startsWith("http")) {
+        resume = ""; // ❌ prevent broken link
+      }
+
+      if (profilePhoto && !profilePhoto.startsWith("http")) {
+        profilePhoto = "";
+      }
+
+      return {
+        applicationId: app._id,
+        name: app.seeker?.name || "Unknown",
+        email: app.seeker?.email || "N/A",
+        resume,
+        profilePhoto,
+        status: app.status,
+        appliedAt: app.createdAt,
+      };
+    });
+
+    // ✅ 5. Response
+    res.status(200).json({
+      jobId: job._id,
+      totalApplicants: formattedApplications.length,
+      applications: formattedApplications,
+    });
+
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error("GetApplicationsForJob Error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

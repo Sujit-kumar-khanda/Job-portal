@@ -14,7 +14,7 @@ import SeekerDashboard from "./pages/SeekerDashboard";
 import JobDetails from "./pages/JobDetails";
 import EmployerProfile from "./pages/EmployerProfile";
 import WhyUsPage from "./pages/Whyus";
-import AIRoadmapPage from "./pages/AiRoadmapPage";
+
 
 function App() {
   return (
@@ -38,8 +38,8 @@ function App() {
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route path="/employer-dashboard" element={<EmployerDashboard />} />
         <Route path="/seeker-dashboard" element={<SeekerDashboard />} />
-        <Route path="/ai-roadmap" element={<AIRoadmapPage />} />
-
+        
+       
         <Route path="/employer-profile" element={<EmployerProfile />} />
       </Routes>
     </AppProvider>
