@@ -1,13 +1,14 @@
 // hooks/useEmployerProfile.js
 import { useState, useEffect, useCallback } from "react";
-
-export const useEmployerProfile = (api, user, setUser, toast) => {
+import toast from "react-hot-toast";
+export const useEmployerProfile = (api, user, setUser) => {
   const baseURL = "http://localhost:5000";
 
   const [form, setForm] = useState({
     name: "",
     email: "",
   });
+
   const [mode, setMode] = useState("details");
   const [savedProfile, setSavedProfile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -15,38 +16,46 @@ export const useEmployerProfile = (api, user, setUser, toast) => {
   const [fileInputKey, setFileInputKey] = useState(0);
   const [isManualEdit, setIsManualEdit] = useState(false);
 
-  // Fetch profile
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await api.get("/profile/me");
-        setSavedProfile(res.data.user);
-        setUser(res.data.user);
-      } catch {
-        toast.error("Failed to load profile");
-      }
-    };
-    fetchProfile();
+  // ================= FETCH PROFILE =================
+  const fetchProfile = useCallback(async () => {
+    try {
+      const res = await api.get("/profile/me");
+
+      setSavedProfile(res.data.user);
+      setUser(res.data.user);
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || "Failed to load profile"
+      );
+    }
   }, [api, setUser, toast]);
 
-  // Prefill form
   useEffect(() => {
-    if (mode === "edit" && savedProfile && !isManualEdit) {
-      setForm({
-        name: savedProfile.name || "",
-        email: savedProfile.email || "",
-      });
-    }
+    fetchProfile();
+  }, [fetchProfile]);
+
+  // ================= PREFILL FORM =================
+  useEffect(() => {
+    if (mode !== "edit" || !savedProfile || isManualEdit) return;
+
+    setForm({
+      name: savedProfile.name || "",
+      email: savedProfile.email || "",
+    });
   }, [mode, savedProfile, isManualEdit]);
 
-  const handleOnchange = useCallback(
-    (e) => {
-      setIsManualEdit(true);
-      setForm({ ...form, [e.target.name]: e.target.value });
-    },
-    [form],
-  );
+  // ================= HANDLE INPUT =================
+  const handleOnchange = useCallback((e) => {
+    const { name, value } = e.target;
 
+    setIsManualEdit(true);
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }, []);
+
+  // ================= SAVE PROFILE =================
   const handleSave = useCallback(
     async (e) => {
       e.preventDefault();
@@ -56,38 +65,42 @@ export const useEmployerProfile = (api, user, setUser, toast) => {
 
       try {
         setLoading(true);
-        const payload = { ...form };
-        const res = await api.post("/profile/update", payload);
+
+        const res = await api.post("/profile/update", {
+          name: form.name.trim(),
+          email: form.email.trim(),
+        });
 
         setSavedProfile(res.data.user);
         setUser(res.data.user);
+
         toast.success("Profile updated");
         setMode("details");
-      } catch {
-        toast.error("Update failed");
+        setIsManualEdit(false);
+      } catch (err) {
+        toast.error(
+          err?.response?.data?.message || "Update failed"
+        );
       } finally {
         setLoading(false);
       }
     },
-    [form, api, setUser, toast],
+    [form, api, setUser, toast]
   );
 
+  // ================= FILE UPLOAD =================
   const handleFileUpload = useCallback(
     async (e) => {
-      const file = e.target.files[0];
-      if (!file) {
-        toast.error("Please select a file");
-        return;
-      }
+      const file = e.target.files?.[0];
+      if (!file) return toast.error("Please select a file");
 
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("File too large. Max 5MB allowed");
-        return;
+        return toast.error("File too large. Max 5MB allowed");
       }
 
-      if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
-        toast.error("Please upload JPG, PNG, or JPEG image");
-        return;
+      const allowed = ["image/jpeg", "image/png", "image/jpg"];
+      if (!allowed.includes(file.type)) {
+        return toast.error("Only JPG, PNG, JPEG allowed");
       }
 
       setUploading(true);
@@ -104,23 +117,29 @@ export const useEmployerProfile = (api, user, setUser, toast) => {
 
         const me = await api.get("/profile/me");
         const updatedUser = me.data.user;
+
         setSavedProfile(updatedUser);
         setUser(updatedUser);
+
         toast.success("Photo uploaded successfully!");
-      } catch (error) {
-        console.error("Upload error:", error);
-        if (error.code === "ECONNABORTED") {
-          toast.error("Upload timeout. Please try again.");
+      } catch (err) {
+        console.error("Upload error:", err);
+
+        if (err.code === "ECONNABORTED") {
+          toast.error("Upload timeout. Try again.");
         } else {
-          toast.error("Failed to upload photo. Please try again.");
+          toast.error(
+            err?.response?.data?.message || "Upload failed"
+          );
         }
       } finally {
         setUploading(false);
       }
     },
-    [api, setUser, toast],
+    [api, setUser, toast]
   );
 
+  // ================= COMPLETENESS =================
   const completeness = savedProfile
     ? Math.round(
         ([
@@ -129,11 +148,12 @@ export const useEmployerProfile = (api, user, setUser, toast) => {
           savedProfile.profilePhoto,
         ].filter(Boolean).length /
           3) *
-          100,
+          100
       )
     : 0;
 
   return {
+    // state
     mode,
     savedProfile,
     form,
@@ -142,7 +162,11 @@ export const useEmployerProfile = (api, user, setUser, toast) => {
     fileInputKey,
     completeness,
     baseURL,
+
+    // setters
     setMode,
+
+    // handlers
     handleOnchange,
     handleSave,
     handleFileUpload,

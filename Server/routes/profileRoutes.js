@@ -9,21 +9,27 @@ import {
 } from "../controllers/profileController.js";
 
 const router = express.Router();
+
+// =========================
+// PROFILE
+// =========================
 router.get("/me", authMiddleware, getProfile);
 
 router.post("/update", authMiddleware, updateProfile);
-// 📄 RESUME
+
+// =========================
+// RESUME UPLOAD (FIXED ORDER)
+// =========================
 router.post(
-  "/upload-resume",(req, res, next) => {
-  console.log("ROUTE HIT");
-  next();
-},
+  "/upload-resume",
   authMiddleware,
   upload.single("resume"),
   uploadResume
 );
 
-// 🖼️ PHOTO
+// =========================
+// PROFILE PHOTO UPLOAD (FIXED ORDER)
+// =========================
 router.post(
   "/upload-photo",
   authMiddleware,

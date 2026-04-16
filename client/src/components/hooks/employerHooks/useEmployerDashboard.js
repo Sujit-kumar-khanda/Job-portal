@@ -1,49 +1,49 @@
+import { useState, useEffect, useCallback, useMemo } from "react";
+import toast from "react-hot-toast";
+export const useEmployerDashboard = (api, user, loadingUser) => {
+  const SKILLS = useMemo(
+    () => [
+      "JavaScript",
+      "React",
+      "Node.js",
+      "Express",
+      "MongoDB",
+      "HTML",
+      "CSS",
+      "Tailwind CSS",
+      "Redux",
+      "TypeScript",
+      "Next.js",
+      "Python",
+      "Django",
+      "Java",
+      "Spring Boot",
+      "SQL",
+      "MySQL",
+      "PostgreSQL",
+      "AWS",
+      "Docker",
+      "Kubernetes",
+      "Git",
+      "CI/CD",
+      "Agile Methodologies",
+      "Problem Solving",
+      "R",
+      "Tableau",
+      "Power BI",
+      "Data Visualization",
+      "Regression Analysis",
+      "C++",
+    ],
+    []
+  );
 
-import React, { useState, useEffect } from "react";
+  const [skillInput, setSkillInput] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedSkills, setSelectedSkills] = useState([]);
+  const [active, setActive] = useState("post");
 
-export const useEmployerDashboard = (api, user, loadingUser, toast) => {
-    const SKILLS = [
-    "JavaScript",
-    "React",
-    "Node.js",
-    "Express",
-    "MongoDB",
-    "HTML",
-    "CSS",
-    "Tailwind CSS",
-    "Redux",
-    "TypeScript",
-    "Next.js",
-    "Python",
-    "Django",
-    "Java",
-    "Spring Boot",
-    "sql",
-    "MySQL",
-    "PostgreSQL",
-    "AWS",
-    "Docker",
-    "Kubernetes",
-    "Git",
-    "CI/CD",
-    "Agile Methodologies",
-    "Problem Solving",
-    "R",
-    "tableau",
-    "Power BI",
-    "Data visualization",
-    "Regression analysis",
-    "java",
-    "c++",
-    "django",
-    "spring boot",
-  ];
-
-  const [skillInput, setSkillInput] = useState(""); // for skill input field
-  const [suggestions, setSuggestions] = useState([]); // for skill suggestions dropdown
-  const [selectedSkills, setSelectedSkills] = useState([]); // for storing selected skills as an array of strings
-  const [active, setActive] = useState("post"); // "post" or "myjobs"
-  const [formData, setFormData] = useState({ // form data for posting a job
+  const [formData, setFormData] = useState({
     title: "",
     description: "",
     location: "",
@@ -51,36 +51,35 @@ export const useEmployerDashboard = (api, user, loadingUser, toast) => {
     skills: "",
   });
 
-  const [jobs, setJobs] = useState([]); // jobs posted by employer along with applicants
-  const [loading, setLoading] = useState(false); // for post job button loading state
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  /* ================= FETCH JOBS ================= */
-  const fetchJobs = async () => {
+  // ================= FETCH JOBS =================
+  const fetchJobs = useCallback(async () => {
     if (!user || user.role !== "employer") return;
+
     try {
       const res = await api.get("/jobs/employer/applications");
       setJobs(res.data.jobs || []);
     } catch (err) {
-      toast.error(
-        err.response?.data?.message || "Failed to fetch applications",
-      );
+      toast.error(err.response?.data?.message || "Failed to fetch applications");
     }
-  };
+  }, [api, user, toast]);
 
   useEffect(() => {
     if (!loadingUser && user?.role === "employer") {
       fetchJobs();
     }
-  }, [loadingUser, user]);
+  }, [loadingUser, user, fetchJobs]);
 
-  // skill input handler with suggestions
+  // ================= SKILLS =================
   const handleSkillChange = (e) => {
     const value = e.target.value;
     setSkillInput(value);
 
-    if (value.length > 0) {
+    if (value.trim()) {
       const filtered = SKILLS.filter((skill) =>
-        skill.toLowerCase().includes(value.toLowerCase()),
+        skill.toLowerCase().includes(value.toLowerCase())
       );
       setSuggestions(filtered);
     } else {
@@ -88,44 +87,39 @@ export const useEmployerDashboard = (api, user, loadingUser, toast) => {
     }
   };
 
-  // add skill to selected list
   const addSkill = (skill) => {
-    const trimmed = skill.trim(); // remove extra spaces from both ends
+    const trimmed = skill.trim();
+    if (!trimmed) return;
 
-    if (!trimmed) return; // ignore empty strings
-
-    // check for duplicates (case-insensitive)
     setSelectedSkills((prev) => {
-      // some() returns true if any skill in prev matches the new skill (ignoring case)
-      const alreadyExists = prev.some(
-        (s) => s.toLowerCase() === trimmed.toLowerCase(),
+      const exists = prev.some(
+        (s) => s.toLowerCase() === trimmed.toLowerCase()
       );
-
-      if (alreadyExists) return prev; // if duplicate, return the original array without adding
-
-      return [...prev, trimmed]; // add new skill if it's not a duplicate
+      return exists ? prev : [...prev, trimmed];
     });
 
     setSkillInput("");
     setSuggestions([]);
   };
 
-  // remove skill from selected list
   const removeSkill = (skill) => {
-    setSelectedSkills(selectedSkills.filter((s) => s !== skill));
+    setSelectedSkills((prev) => prev.filter((s) => s !== skill));
   };
 
-  /* ================= POST JOB ================= */
+  // ================= POST JOB =================
   const handlePostJob = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.description)
+
+    if (!formData.title || !formData.description) {
       return toast.error("Title & description required");
+    }
 
     try {
       setLoading(true);
+
       await api.post("/jobs", {
         ...formData,
-        skills: selectedSkills.map((s) => s.trim()).filter(Boolean),
+        skills: selectedSkills,
       });
 
       toast.success("Job posted successfully");
@@ -138,7 +132,11 @@ export const useEmployerDashboard = (api, user, loadingUser, toast) => {
         skills: "",
       });
 
+      setSelectedSkills([]);
+      setSkillInput("");
+      setSuggestions([]);
       setActive("myjobs");
+
       fetchJobs();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to post job");
@@ -147,39 +145,44 @@ export const useEmployerDashboard = (api, user, loadingUser, toast) => {
     }
   };
 
-  /* ================= STATUS UPDATE ================= */
+  // ================= STATUS UPDATE =================
   const handleStatusChange = async (appId, status) => {
     try {
       await api.patch(`/applications/${appId}/status`, { status });
+
       toast.success(`Application ${status}`);
-      fetchJobs();
+
+      // OPTIONAL OPTIMIZED UPDATE (instead of refetch)
+      setJobs((prev) =>
+        prev.map((job) => ({
+          ...job,
+          applicants: job.applicants.map((app) =>
+            app.applicationId === appId ? { ...app, status } : app
+          ),
+        }))
+      );
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to update status");
     }
   };
 
-  
+  return {
+    skillInput,
+    suggestions,
+    selectedSkills,
+    setSelectedSkills,
+    active,
+    setActive,
+    formData,
+    setFormData,
+    jobs,
+    loading,
 
-
-
- return {
-    // usestates
-    skillInput, // current value of skill input field
-    suggestions, // array of skill suggestions based on input
-    selectedSkills, // array of skills selected for the job
-    setSelectedSkills, // function to update selected skills
-    active, // current active tab ("post" or "myjobs")
-    setActive, // function to change active tab
-    formData, // object containing form data for posting a job (title, description, location, salary, skills)
-    setFormData, // function to update form data
-    jobs, // array of jobs posted by the employer along with their applicants and application statuses
-    loading, // boolean indicating if the post job request is in progress
-
-    // handlers
-    handleSkillChange, // updates skillInput and suggestions based on user input
-    addSkill, // adds a skill to selectedSkills if it's not a duplicate
-    removeSkill, // removes a skill from selectedSkills
-    handlePostJob, // submits the job posting form
-    handleStatusChange, // updates the status of a job application
- };
+    handleSkillChange,
+    addSkill,
+    removeSkill,
+    handlePostJob,
+    handleStatusChange,
+    fetchJobs,
+  };
 };

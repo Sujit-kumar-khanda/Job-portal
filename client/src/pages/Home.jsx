@@ -1,80 +1,115 @@
 import React from "react";
-import { Search, Briefcase, Users } from "lucide-react";
+import { Briefcase, Users } from "lucide-react";
 import Testimonials from "../components/Testimonials";
 import JobNewsletter from "../components/JobNewsletter";
 import Footer from "../components/Footer";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
-    <div className="mt-20 overflow-hidden">
-      {/* Hero Section */}
-      <section className="relative min-h-screen bg-linear-to-br from-indigo-50 via-blue-50 to-sky-100 flex items-center">
-        {/* Decorative Blobs */}
-        <div className="absolute top-10 left-10 w-72 h-72 bg-indigo-200 rounded-full blur-3xl opacity-30"></div>
-        <div className="absolute bottom-10 right-10 w-72 h-72 bg-sky-200 rounded-full blur-3xl opacity-30"></div>
+    <div className="mt-20 overflow-hidden bg-[#0b0f1a] text-white">
+      {/* HERO */}
+      <section className="relative min-h-screen flex items-center">
+        
+        {/* Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-black to-sky-900 opacity-90"></div>
+
+        {/* Glow */}
+        <div className="absolute top-10 left-10 w-72 h-72 bg-indigo-500 rounded-full blur-[120px] opacity-20"></div>
+        <div className="absolute bottom-10 right-10 w-72 h-72 bg-sky-500 rounded-full blur-[120px] opacity-20"></div>
 
         <div className="relative max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-14 items-center">
-          {/* Left Content */}
-          <div className="flex flex-col justify-center animate-fade-in">
-            <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight">
+
+          {/* LEFT */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="flex flex-col"
+          >
+            <h1 className="text-5xl md:text-6xl font-bold leading-tight">
               Find Your{" "}
-              <span className="text-indigo-600">Dream Job</span>  
-              <br /> With Confidence
+              <span className="text-indigo-400">Next Opportunity</span>
+              <br />
+              Without the Noise
             </h1>
 
-            <p className="mt-6 text-lg text-gray-700 max-w-xl">
-              Discover verified jobs, connect with trusted employers, and take
-              the next step in your career journey — all in one place.
+            <p className="mt-6 text-lg text-gray-300 max-w-xl">
+              We help you discover genuine job opportunities and connect
+              directly with employers — no clutter, no confusion.
             </p>
 
-            {/* Search Bar */}
-            <div className="mt-8 bg-white flex items-center shadow-xl rounded-2xl p-2 border border-gray-200 hover:shadow-2xl transition">
-              <Search className="text-gray-400 w-5 h-5 ml-3" />
-              <input
-                type="text"
-                placeholder="Search jobs by title or keyword..."
-                className="w-full px-4 py-3 outline-none text-gray-700 rounded-2xl"
-              />
-              <button className="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-2xl hover:bg-indigo-700 transition-all duration-300">
-                Search
-              </button>
+            {/* ✅ CTA BUTTONS (REPLACED SEARCH) */}
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+
+              {/* Primary */}
+              <Link to="/signup">
+                <button className="px-8 py-3 bg-indigo-600 rounded-xl font-semibold hover:bg-indigo-700 transition duration-300 shadow-md hover:shadow-indigo-500/20">
+                  Get Started
+                </button>
+              </Link>
+
+              {/* Secondary */}
+              <Link to="/jobs">
+                <button className="px-8 py-3 border border-white/20 rounded-xl hover:bg-white/10 transition duration-300">
+                  Browse Jobs
+                </button>
+              </Link>
+
             </div>
 
-            {/* Stats */}
+            {/* STATS */}
             <div className="grid grid-cols-2 gap-8 mt-12 max-w-md">
-              <div className="bg-white rounded-2xl p-5 shadow-md hover:shadow-lg transition">
-                <div className="flex items-center gap-3">
-                  <Briefcase className="text-indigo-600" />
-                  <h2 className="text-3xl font-bold text-gray-900">10K+</h2>
-                </div>
-                <p className="text-gray-600 mt-1">Jobs Posted</p>
-              </div>
-
-              <div className="bg-white rounded-2xl p-5 shadow-md hover:shadow-lg transition">
-                <div className="flex items-center gap-3">
-                  <Users className="text-indigo-600" />
-                  <h2 className="text-3xl font-bold text-gray-900">5K+</h2>
-                </div>
-                <p className="text-gray-600 mt-1">Trusted Employers</p>
-              </div>
+              {[{
+                icon: <Briefcase className="text-indigo-400" />,
+                value: "10K+",
+                label: "Jobs Posted",
+              }, {
+                icon: <Users className="text-sky-400" />,
+                value: "5K+",
+                label: "Employers",
+              }].map((item, i) => (
+                <motion.div
+                  key={i}
+                  whileHover={{ y: -4 }}
+                  className="bg-white/5 backdrop-blur-md rounded-2xl p-5 border border-white/10 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    {item.icon}
+                    <h2 className="text-2xl font-semibold">{item.value}</h2>
+                  </div>
+                  <p className="text-gray-400 mt-1 text-sm">{item.label}</p>
+                </motion.div>
+              ))}
             </div>
-          </div>
+          </motion.div>
 
-          {/* Right Image */}
-          <div className="flex justify-center items-center animate-slide-up">
-            <img
-              src="https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=700&q=80"
-              alt="Job search platform illustration"
-              className="w-full max-w-lg rounded-3xl shadow-2xl hover:scale-105 transition-transform duration-500"
-            />
-          </div>
+          {/* RIGHT IMAGE */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1 }}
+            className="flex justify-center"
+          >
+            <div className="relative">
+              <img
+                src="https://images.unsplash.com/photo-1556761175-4b46a572b786?auto=format&fit=crop&w=700&q=80"
+                alt="Job search"
+                className="rounded-3xl shadow-2xl"
+              />
+            </div>
+          </motion.div>
+
         </div>
       </section>
 
-      {/* Extra Sections */}
-      <Testimonials />
-      <JobNewsletter />
-      <Footer />
+      {/* EXTRA */}
+      <div className="bg-[#0b0f1a]">
+        <Testimonials />
+        <JobNewsletter />
+        <Footer />
+      </div>
     </div>
   );
 };

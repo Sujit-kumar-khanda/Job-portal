@@ -6,7 +6,7 @@ import About from "./pages/About";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
+
 import { Toaster } from "react-hot-toast";
 import { AppProvider } from "./context/AppContext";
 import EmployerDashboard from "./pages/EmployerDashboard";
@@ -14,6 +14,7 @@ import SeekerDashboard from "./pages/SeekerDashboard";
 import JobDetails from "./pages/JobDetails";
 import EmployerProfile from "./pages/EmployerProfile";
 import WhyUsPage from "./pages/Whyus";
+import ResetPassword from "./pages/ResetPassword";
 
 
 function App() {

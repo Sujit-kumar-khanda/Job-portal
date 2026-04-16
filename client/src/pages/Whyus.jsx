@@ -1,209 +1,175 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import {
-  FaDatabase,
-  FaBrain,
-  FaFileAlt,
+  FaSearch,
   FaShieldAlt,
   FaUsers,
+  FaBolt,
+  FaCompass,
 } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const WhyUsPage = () => {
-  const [stats, setStats] = useState({ jobs: 0, users: 0, interviews: 0 });
+  const [stats, setStats] = useState({ users: 0, jobs: 0 });
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setStats({
-        jobs: stats.jobs < 10000000 ? stats.jobs + 100000 : 10000000,
-        users: stats.users < 10 ? stats.users + 1 : 10,
-        interviews: stats.interviews < 3 ? stats.interviews + 0.1 : 3,
+      setStats((prev) => {
+        const users = Math.min(prev.users + 100, 5000);
+        const jobs = Math.min(prev.jobs + 1000, 50000);
+
+        if (users === 5000 && jobs === 50000) {
+          clearInterval(interval);
+        }
+
+        return { users, jobs };
       });
-    }, 50);
+    }, 20);
+
     return () => clearInterval(interval);
-  }, [stats]);
+  }, []);
+
+  const formatK = (num) => {
+    return num >= 1000
+      ? `${(num / 1000).toFixed(num >= 10000 ? 0 : 1)}K+`
+      : num;
+  };
 
   const features = [
     {
-      icon: FaDatabase,
-      title: "Vast Job Database",
-      desc: "Access millions of verified listings across industries, updated daily from top employers worldwide.",
-    },
-    {
-      icon: FaBrain,
-      title: "Smart Matching",
-      desc: "AI-powered algorithms match your skills, experience, and preferences to the best opportunities, saving you time.",
-    },
-    {
-      icon: FaFileAlt,
-      title: "Resume Builder",
-      desc: "Free professional templates and optimization tools to boost your profile visibility by up to 40%.",
+      icon: FaSearch,
+      title: "Focused Job Search",
+      desc: "Find roles that actually match your skills using simple and effective filters.",
     },
     {
       icon: FaShieldAlt,
-      title: "Scam-Free Guarantee",
-      desc: "Rigorous vetting ensures every job is legitimate, giving you peace of mind.",
+      title: "Verified Opportunities",
+      desc: "Every listing is reviewed to reduce spam and keep things trustworthy.",
     },
     {
       icon: FaUsers,
-      title: "Trusted by Millions",
-      desc: "Over 10 million job seekers and thousands of employers rely on JobSeeker for seamless connections.",
+      title: "Direct Connections",
+      desc: "Apply and connect with employers without unnecessary steps.",
+    },
+    {
+      icon: FaCompass,
+      title: "Guided Discovery",
+      desc: "Explore relevant roles based on your activity and interests.",
+    },
+    {
+      icon: FaBolt,
+      title: "Quick Applications",
+      desc: "Apply faster and keep track of your progress in one place.",
     },
   ];
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 py-20 px-4 sm:px-6 lg:px-8">
-      {/* Hero Section */}
-      <section className="max-w-6xl mx-auto text-center mb-20">
-        <h1 className="text-5xl md:text-6xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-6 animate-fade-in">
-          Why Choose JobSeeker?
-        </h1>
-        <p className="text-xl md:text-2xl text-gray-700 max-w-3xl mx-auto mb-12 animate-fade-in-up">
-          JobSeeker stands out as a premier job portal designed specifically for
-          ambitious professionals seeking their next career move.
-        </p>
+    <div className="min-h-screen bg-[#0b0f1a] text-white relative overflow-hidden">
+
+      {/* 🌌 background */}
+      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_1px_1px,#1f2937_1px,transparent_0)] [background-size:35px_35px]" />
+
+      {/* ✨ glow */}
+      <div className="absolute top-24 left-10 w-72 h-72 bg-indigo-500 blur-[120px] opacity-10" />
+      <div className="absolute bottom-24 right-10 w-72 h-72 bg-sky-500 blur-[120px] opacity-10" />
+
+      {/* HERO */}
+      <section className="text-center py-28 px-6">
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-4xl md:text-6xl font-bold leading-tight"
+        >
+          A Better Way to
+          <br />
+          <span className="text-indigo-400">Find Your Next Job</span>
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mt-6 text-gray-400 max-w-xl mx-auto text-lg"
+        >
+          We keep things simple — helping you discover genuine opportunities
+          and move forward in your career with confidence.
+        </motion.p>
       </section>
 
-      {/* Stats Section */}
-      <section className="max-w-4xl mx-auto grid md:grid-cols-3 gap-8 mb-24 text-center">
-        <div className="p-8 bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/50 animate-float">
-          <FaUsers className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-bounce" />
-          <p className="text-4xl font-bold text-blue-600">
-            {Math.floor(stats.users)}M
-          </p>
-          <p className="text-gray-600 font-semibold">Users</p>
-        </div>
-        <div className="p-8 bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/50 animate-float delay-200">
-          <FaDatabase className="w-16 h-16 text-green-500 mx-auto mb-4 animate-pulse" />
-          <p className="text-4xl font-bold text-green-600">
-            {Math.floor(stats.jobs).toLocaleString()}
-          </p>
-          <p className="text-gray-600 font-semibold">Jobs</p>
-        </div>
-        <div className="p-8 bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-white/50 animate-float delay-400">
-          <div className="w-16 h-16 bg-purple-500 rounded-full mx-auto mb-4 flex items-center justify-center animate-ping">
-            <span className="text-white font-bold text-lg">3x</span>
-          </div>
-          <p className="text-2xl font-bold text-purple-600">
-            {stats.interviews.toFixed(1)}x
-          </p>
-          <p className="text-gray-600 font-semibold">Faster Interviews</p>
-        </div>
+      {/* STATS */}
+      <section className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto px-6 mb-24">
+        {[
+          {
+            label: "Active Users",
+            value: formatK(stats.users),
+          },
+          {
+            label: "Job Listings",
+            value: formatK(stats.jobs),
+          },
+        ].map((item, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ y: -4 }}
+            className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center backdrop-blur-md transition"
+          >
+            <p className="text-4xl font-semibold">{item.value}</p>
+            <p className="text-gray-400 mt-2">{item.label}</p>
+          </motion.div>
+        ))}
       </section>
 
-      {/* Features Grid */}
-      <section className="max-w-6xl mx-auto mb-20">
-        <h2 className="text-4xl font-bold text-center text-gray-800 mb-16 animate-fade-in-up">
-          Key Advantages
+      {/* FEATURES */}
+      <section className="max-w-7xl mx-auto px-6 mb-28">
+        <h2 className="text-3xl text-center mb-12 font-semibold text-gray-200">
+          What makes it different
         </h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {features.map((f, i) => {
+            const Icon = f.icon;
             return (
-              <div
-                key={feature.title}
-                className="group p-8 bg-white rounded-2xl shadow-lg hover:shadow-2xl hover:bg-linear-to-br hover:from-blue-50 hover:to-indigo-50 transition-all duration-500 hover:-translate-y-4 cursor-pointer border border-gray-100 hover:border-blue-200 animate-slide-in"
-                style={{ animationDelay: `${index * 100}ms` }}
+              <motion.div
+                key={i}
+                whileHover={{ y: -6 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white/5 border border-white/10 rounded-xl p-5 backdrop-blur-md hover:bg-white/10 hover:border-indigo-400/40 transition-all duration-300 cursor-pointer"
               >
-                <Icon className="w-12 h-12 text-blue-500 group-hover:scale-110 transition-transform duration-300 mb-6 animate-spin-slow" />
-                <h3 className="text-2xl font-bold text-gray-800 mb-4 group-hover:text-blue-600 transition-colors">
-                  {feature.title}
+                <Icon className="text-indigo-400 text-lg mb-3" />
+
+                <h3 className="text-sm font-semibold mb-1 text-gray-200">
+                  {f.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
-              </div>
+
+                <p className="text-gray-400 text-xs leading-relaxed">
+                  {f.desc}
+                </p>
+              </motion.div>
             );
           })}
         </div>
       </section>
 
-      {/* Success Story */}
-      <section className="max-w-4xl mx-auto text-center p-12 bg-linear-to-r from-purple-500 to-blue-600 text-white rounded-3xl shadow-2xl animate-fade-in-up">
-        <blockquote className="text-xl md:text-2xl italic mb-6">
-          &quot;JobSeeker found me my dream role in tech after weeks of
-          fruitless searching elsewhere.&quot;
-        </blockquote>
-        <p className="text-2xl font-semibold opacity-90">
-          - Priya, Chennai[web:1]
-        </p>
-      </section>
+      {/* CTA */}
+      <section className="text-center pb-28 px-6">
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          className="bg-white/5 border border-white/10 rounded-3xl px-10 py-10 max-w-xl mx-auto backdrop-blur-md transition"
+        >
+          <h3 className="text-2xl font-semibold mb-3">
+            Ready to take the next step?
+          </h3>
 
-      <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes fade-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(50px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes slide-in {
-          from {
-            opacity: 0;
-            transform: translateX(-50px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 1s ease-out;
-        }
-        .animate-fade-in-up {
-          animation: fade-in-up 1s ease-out;
-        }
-        .animate-slide-in {
-          animation: slide-in 0.8s ease-out forwards;
-        }
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-        .animate-spin-slow {
-          animation: spin-slow 20s linear infinite;
-        }
-        .delay-200 {
-          animation-delay: 0.2s;
-        }
-        .delay-400 {
-          animation-delay: 0.4s;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-          }
-        }
-      `}</style>
+          <p className="text-gray-400 mb-6">
+            Start exploring jobs and find something that truly fits you.
+          </p>
+           <Link to="/jobs">
+          <button className="px-6 py-3 bg-indigo-600 rounded-xl hover:bg-indigo-700 transition text-white font-medium">
+            Browse Jobs
+          </button>
+          </Link>
+        </motion.div>
+      </section>
     </div>
   );
 };

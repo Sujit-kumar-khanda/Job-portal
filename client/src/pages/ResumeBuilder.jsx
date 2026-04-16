@@ -1,650 +1,352 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import {
-  FaPlus,
-  FaDownload,
-  FaEdit,
-  FaTrash,
-  FaFilePdf,
-  FaProjectDiagram,
-} from "react-icons/fa";
+import { FaPlus, FaDownload, FaEdit, FaTrash, FaFilePdf } from "react-icons/fa";
+import { Mail, Phone, MapPin } from "lucide-react";
 import html2canvas from "html2canvas-pro";
 import { jsPDF } from "jspdf";
 
+const defaultResume = {
+  personal: { name: "", email: "", role: "", phone: "", location: "" },
+  summary: "",
+  education: [{ school: "", degree: "", dates: "" }],
+  skills: [""],
+  projects: [{ name: "", desc: "", tech: "", link: "" }],
+  experience: [{ company: "", role: "", dates: "", desc: "" }],
+};
+
 const ResumeBuilder = () => {
-  const [resume, setResume] = useState({
-    personal: {
-      name: "",
-      email: "",
-      phone: "",
-      location: "Chennai, Tamil Nadu",
-    },
-    summary: "",
-    experience: [{ company: "", role: "", dates: "", desc: "" }],
-    education: [{ school: "", degree: "", dates: "" }],
-    projects: [{ name: "", desc: "", tech: "", link: "" }],
-    skills: [""],
-  });
+  const [resume, setResume] = useState(defaultResume);
   const previewRef = useRef();
 
-  const addSection = useCallback((type) => {
-    setResume((prev) => {
-      if (type === "experience") {
-        return {
-          ...prev,
-          experience: [
-            ...prev.experience,
-            { company: "", role: "", dates: "", desc: "" },
-          ],
-        };
-      } else if (type === "education") {
-        return {
-          ...prev,
-          education: [...prev.education, { school: "", degree: "", dates: "" }],
-        };
-      } else if (type === "projects") {
-        return {
-          ...prev,
-          projects: [
-            ...prev.projects,
-            { name: "", desc: "", tech: "", link: "" },
-          ],
-        };
-      } else if (type === "skills") {
-        return { ...prev, skills: [...prev.skills, ""] };
-      }
-      return prev;
-    });
+  const Section = ({ title, children }) => (
+    <div className="mt-4 mb-4">
+      <h2 className="text-[18px] font-bold uppercase tracking-widest  border-b border-gray-500 pb-1">
+        {title}
+      </h2>
+      <div className="text-[14px] text-gray-800 mt-2">{children}</div>
+    </div>
+  );
+
+  useEffect(() => {
+    const saved = localStorage.getItem("resumeData");
+    if (saved) setResume(JSON.parse(saved));
+  }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      localStorage.setItem("resumeData", JSON.stringify(resume));
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [resume]);
+
+  const updatePersonal = useCallback((field, value) => {
+    setResume((prev) => ({
+      ...prev,
+      personal: { ...prev.personal, [field]: value },
+    }));
   }, []);
 
   const updateField = useCallback((section, index, field, value) => {
     setResume((prev) => {
-      const newResume = { ...prev };
-      if (section === "skills") {
-        newResume.skills[index] = value;
-      } else if (newResume[section] && newResume[section][index]) {
-        newResume[section][index][field] = value;
-      }
-      return newResume;
+      const updated = [...prev[section]];
+      updated[index] =
+        section === "skills" ? value : { ...updated[index], [field]: value };
+      return { ...prev, [section]: updated };
     });
+  }, []);
+
+  const addSection = useCallback((type) => {
+    const map = {
+      education: { school: "", degree: "", dates: "" },
+      projects: { name: "", desc: "", tech: "", link: "" },
+      experience: { company: "", role: "", dates: "", desc: "" },
+      skills: "",
+    };
+
+    setResume((prev) => ({
+      ...prev,
+      [type]: [...prev[type], map[type]],
+    }));
   }, []);
 
   const removeSection = useCallback((section, index) => {
     setResume((prev) => {
-      const newResume = { ...prev };
-      if (newResume[section] && newResume[section][index]) {
-        newResume[section].splice(index, 1);
-        if (newResume[section].length === 0) {
-          if (section === "experience") {
-            newResume[section] = [
-              { company: "", role: "", dates: "", desc: "" },
-            ];
-          } else if (section === "education") {
-            newResume[section] = [{ school: "", degree: "", dates: "" }];
-          } else if (section === "projects") {
-            newResume[section] = [{ name: "", desc: "", tech: "", link: "" }];
-          } else if (section === "skills") {
-            newResume[section] = [""];
-          }
-        }
-      }
-      return newResume;
+      const filtered = prev[section].filter((_, i) => i !== index);
+
+      const fallback = {
+        education: [{ school: "", degree: "", dates: "" }],
+        projects: [{ name: "", desc: "", tech: "", link: "" }],
+        experience: [{ company: "", role: "", dates: "", desc: "" }],
+        skills: [""],
+      };
+
+      return {
+        ...prev,
+        [section]: filtered.length ? filtered : fallback[section],
+      };
     });
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const nameInput = document.querySelector(
-        'input[placeholder="Full Name"]',
-      );
-      if (nameInput) nameInput.focus();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const downloadPDF = useCallback(async () => {
+  const downloadPDF = async () => {
     const element = previewRef.current;
-    if (!element || !(element instanceof HTMLElement)) {
-      alert("Preview not ready. Please wait and try again.");
-      return;
-    }
+    if (!element) return;
+     element.classList.add("pdf-mode");
 
-    try {
-      // Temporarily optimize for PDF capture
-      const originalStyles = {
-        border: element.style.border,
-        boxShadow: element.style.boxShadow,
-        padding: element.style.padding,
-      };
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+    });
+    element.classList.remove("pdf-mode");
 
-      element.style.border = "none";
-      element.style.boxShadow = "none";
-      element.style.padding = "24px";
-      element.style.margin = "0";
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
 
-      const canvas = await html2canvas(element, {
-        scale: 2.5,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        logging: false,
-        width: 595,
-        height: 842,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: 595,
-        windowHeight: 842,
-        allowTaint: true,
-      });
+    const imgWidth = 210;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // Restore styles
-      Object.entries(originalStyles).forEach(([key, value]) => {
-        element.style[key] = value;
-      });
-
-      const imgData = canvas.toDataURL("image/png", 1.0);
-      const pdf = new jsPDF("p", "pt", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      const imgWidth = pdfWidth;
-      let imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      // Scale to fit A4 perfectly
-      if (imgHeight > pdfHeight) {
-        imgHeight = pdfHeight * 0.95;
-      }
-
-      const x = (pdfWidth - imgWidth) / 2;
-      const y = (pdfHeight - imgHeight) / 2;
-
-      pdf.addImage(
-        imgData,
-        "PNG",
-        x,
-        y,
-        imgWidth,
-        imgHeight,
-        undefined,
-        "FAST",
-      );
-
-      const timestamp = new Date()
-        .toISOString()
-        .slice(0, 19)
-        .replace(/:/g, "-");
-      const filename = `${resume.personal.name.trim() || "resume"}-${timestamp}.pdf`;
-
-      pdf.save(filename);
-    } catch (error) {
-      console.error("Download failed:", error);
-      alert("Download failed. Please try again.");
-    }
-  }, [resume.personal.name]);
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+    pdf.save("resume.pdf");
+  };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            Resume Builder
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Create professional resumes that fit perfectly on A4. Instant PDF
-            export.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gray-950 text-white p-4">
+      <div className="grid lg:grid-cols-2 gap-6">
 
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          {/* Form Editor */}
-          <div className="bg-white rounded-3xl shadow-2xl p-8 lg:p-12 sticky top-8 max-h-screen overflow-y-auto">
-            <h2 className="text-3xl font-bold text-gray-800 mb-8 flex items-center">
-              <FaEdit className="mr-3 text-blue-500" /> Edit Resume
-            </h2>
+        {/* FORM */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-xl">
+          <h2 className="text-xl font-bold text-indigo-400 flex items-center gap-2 mb-5">
+            <FaEdit /> Edit Resume
+          </h2>
 
-            {/* Personal Info */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <h3 className="text-2xl font-semibold mb-4">Personal Info</h3>
-              <input
-                className="w-full p-4 border border-gray-300 rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Full Name"
-                value={resume.personal.name}
-                onChange={(e) =>
-                  setResume({
-                    ...resume,
-                    personal: { ...resume.personal, name: e.target.value },
-                  })
-                }
-              />
-              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                <input
-                  className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  placeholder="Email"
-                  value={resume.personal.email}
-                  onChange={(e) =>
-                    setResume({
-                      ...resume,
-                      personal: { ...resume.personal, email: e.target.value },
-                    })
-                  }
-                />
-                <input
-                  className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  placeholder="Phone"
-                  value={resume.personal.phone}
-                  onChange={(e) =>
-                    setResume({
-                      ...resume,
-                      personal: { ...resume.personal, phone: e.target.value },
-                    })
-                  }
-                />
-              </div>
-              <input
-                className="w-full p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500"
-                placeholder="Location"
-                value={resume.personal.location}
-                onChange={(e) =>
-                  setResume({
-                    ...resume,
-                    personal: { ...resume.personal, location: e.target.value },
-                  })
-                }
-              />
-            </section>
+          {["name", "role", "email", "phone", "location"].map((field) => (
+            <input
+              key={field}
+              className="w-full mb-3 p-3 rounded-xl bg-black/30 border border-white/10 focus:border-indigo-500 outline-none text-sm"
+              placeholder={field}
+              value={resume.personal[field]}
+              onChange={(e) => updatePersonal(field, e.target.value)}
+            />
+          ))}
 
-            {/* Summary */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <h3 className="text-2xl font-semibold mb-4">
-                Professional Summary
-              </h3>
-              <textarea
-                className="w-full p-4 border border-gray-300 rounded-xl h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
-                placeholder="Tell us about your experience and goals (keep concise)..."
-                value={resume.summary}
-                onChange={(e) =>
-                  setResume({ ...resume, summary: e.target.value })
-                }
-              />
-            </section>
+          <textarea
+            className="w-full mb-4 p-3 rounded-xl bg-black/30 border border-white/10 text-sm"
+            placeholder="Summary"
+            value={resume.summary}
+            onChange={(e) =>
+              setResume((prev) => ({ ...prev, summary: e.target.value }))
+            }
+          />
 
-            {/* Experience - Compact */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-semibold">Experience</h3>
-                <button
-                  onClick={() => addSection("experience")}
-                  className="p-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all flex items-center"
-                >
-                  <FaPlus className="mr-1" /> Add
-                </button>
-              </div>
-              {resume.experience.map((exp, idx) => (
-                <div key={idx} className="mb-4 p-4 bg-gray-50 rounded-xl">
-                  <div className="grid md:grid-cols-2 gap-3 mb-2">
-                    <input
-                      className="p-3 border rounded-lg text-sm"
-                      placeholder="Company"
-                      value={exp.company}
-                      onChange={(e) =>
-                        updateField(
-                          "experience",
-                          idx,
-                          "company",
-                          e.target.value,
-                        )
-                      }
-                    />
-                    <input
-                      className="p-3 border rounded-lg text-sm"
-                      placeholder="Role"
-                      value={exp.role}
-                      onChange={(e) =>
-                        updateField("experience", idx, "role", e.target.value)
-                      }
-                    />
-                  </div>
-                  <input
-                    className="w-full p-3 border rounded-lg mb-2 text-sm"
-                    placeholder="Dates (2020-Present)"
-                    value={exp.dates}
-                    onChange={(e) =>
-                      updateField("experience", idx, "dates", e.target.value)
-                    }
-                  />
-                  <textarea
-                    className="w-full p-3 border rounded-lg h-16 text-sm"
-                    placeholder="Key achievements (3-4 bullet points)"
-                    value={exp.desc}
-                    onChange={(e) =>
-                      updateField("experience", idx, "desc", e.target.value)
-                    }
-                  />
-                  {resume.experience.length > 1 && (
-                    <button
-                      onClick={() => removeSection("experience", idx)}
-                      className="text-red-500 hover:text-red-700 mt-2 flex items-center text-sm"
-                    >
-                      <FaTrash className="mr-1" /> Remove
-                    </button>
-                  )}
-                </div>
-              ))}
-            </section>
-
-            {/* Projects - Compact */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-semibold flex items-center">
-                  <FaProjectDiagram className="mr-2 text-orange-500" /> Projects
+          {["education", "projects", "experience"].map((section) => (
+            <div key={section} className="mt-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-semibold capitalize text-indigo-300">
+                  {section}
                 </h3>
+
                 <button
-                  onClick={() => addSection("projects")}
-                  className="p-2 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-all flex items-center"
+                  onClick={() => addSection(section)}
+                  className="p-2 bg-indigo-600 rounded-lg hover:bg-indigo-700"
                 >
-                  <FaPlus className="mr-1" /> Add
+                  <FaPlus />
                 </button>
               </div>
-              {resume.projects.map((project, idx) => (
+
+              {resume[section].map((item, i) => (
                 <div
-                  key={idx}
-                  className="mb-4 p-4 bg-orange-50 rounded-xl border border-orange-100"
+                  key={i}
+                  className="mt-3 p-3 rounded-xl bg-black/20 border border-white/10"
                 >
-                  <input
-                    className="w-full p-3 border rounded-lg mb-2 text-sm"
-                    placeholder="Project Name"
-                    value={project.name}
-                    onChange={(e) =>
-                      updateField("projects", idx, "name", e.target.value)
-                    }
-                  />
-                  <textarea
-                    className="w-full p-3 border rounded-lg mb-3 h-16 text-sm"
-                    placeholder="What you built + impact (keep short)"
-                    value={project.desc}
-                    onChange={(e) =>
-                      updateField("projects", idx, "desc", e.target.value)
-                    }
-                  />
-                  <div className="grid md:grid-cols-2 gap-3 mb-2">
+                  {Object.keys(item).map((field) => (
                     <input
-                      className="p-3 border rounded-lg text-sm"
-                      placeholder="Tech Stack"
-                      value={project.tech}
+                      key={field}
+                      className="w-full mb-2 p-2 rounded-lg bg-black/30 border border-white/10 text-sm"
+                      placeholder={field}
+                      value={item[field]}
                       onChange={(e) =>
-                        updateField("projects", idx, "tech", e.target.value)
+                        updateField(section, i, field, e.target.value)
                       }
                     />
-                    <input
-                      className="p-3 border rounded-lg text-sm"
-                      placeholder="Live Link"
-                      value={project.link}
-                      onChange={(e) =>
-                        updateField("projects", idx, "link", e.target.value)
-                      }
-                    />
-                  </div>
-                  {resume.projects.length > 1 && (
-                    <button
-                      onClick={() => removeSection("projects", idx)}
-                      className="text-red-500 hover:text-red-700 flex items-center text-sm"
-                    >
-                      <FaTrash className="mr-1" /> Remove
-                    </button>
-                  )}
-                </div>
-              ))}
-            </section>
+                  ))}
 
-            {/* Education - Compact */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-semibold">Education</h3>
-                <button
-                  onClick={() => addSection("education")}
-                  className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all flex items-center"
-                >
-                  <FaPlus className="mr-1" /> Add
-                </button>
-              </div>
-              {resume.education.map((edu, idx) => (
-                <div
-                  key={idx}
-                  className="flex flex-col gap-3 p-4 bg-gray-50 rounded-xl mb-4"
-                >
-                  <input
-                    className="p-3 border rounded-lg text-sm"
-                    placeholder="University/College"
-                    value={edu.school}
-                    onChange={(e) =>
-                      updateField("education", idx, "school", e.target.value)
-                    }
-                  />
-                  <input
-                    className="p-3 border rounded-lg text-sm"
-                    placeholder="Degree, CGPA"
-                    value={edu.degree}
-                    onChange={(e) =>
-                      updateField("education", idx, "degree", e.target.value)
-                    }
-                  />
-                  <input
-                    className="w-full md:w-32 p-3 border rounded-lg text-sm"
-                    placeholder="2020-2024"
-                    value={edu.dates}
-                    onChange={(e) =>
-                      updateField("education", idx, "dates", e.target.value)
-                    }
-                  />
-                  {resume.education.length > 1 && (
-                    <button
-                      onClick={() => removeSection("education", idx)}
-                      className="text-red-500 self-start p-2 hover:text-red-700 text-sm"
-                    >
-                      <FaTrash />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </section>
-
-            {/* Skills - Compact */}
-            <section className="mb-8 p-6 border border-gray-200 rounded-2xl">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-2xl font-semibold">Skills</h3>
-                <button
-                  onClick={() => addSection("skills")}
-                  className="p-2 bg-purple-500 text-white rounded-xl hover:bg-purple-600 transition-all flex items-center"
-                >
-                  <FaPlus className="mr-1" /> Add
-                </button>
-              </div>
-              <div className="space-y-3 max-w-md">
-                {resume.skills.map((skill, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all"
+                  <button
+                    onClick={() => removeSection(section, i)}
+                    className="text-red-400 text-sm mt-1"
                   >
-                    <input
-                      className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
-                      placeholder="React, Node.js, Python..."
-                      value={skill}
-                      onChange={(e) =>
-                        updateField("skills", idx, "skill", e.target.value)
-                      }
-                    />
-                    {resume.skills.length > 1 && (
-                      <button
-                        onClick={() => removeSection("skills", idx)}
-                        className="p-3 text-red-500 hover:bg-red-100 hover:text-red-700 rounded-xl transition-all flex items-center shadow-sm hover:shadow-md"
-                        title="Remove skill"
-                      >
-                        <FaTrash className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
+                    <FaTrash />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ))}
 
+          {/* SKILLS */}
+          <h3 className="mt-5 font-semibold text-indigo-300">Skills</h3>
+
+          {resume.skills.map((skill, i) => (
+            <div key={i} className="flex gap-2 mt-2">
+              <input
+                className="flex-1 p-2 rounded-lg bg-black/30 border border-white/10 text-sm"
+                value={skill}
+                onChange={(e) =>
+                  updateField("skills", i, "value", e.target.value)
+                }
+              />
+              <button
+                onClick={() => removeSection("skills", i)}
+                className="text-red-400"
+              >
+                <FaTrash />
+              </button>
+            </div>
+          ))}
+
+          <button
+            onClick={() => addSection("skills")}
+            className="mt-3 p-2 bg-indigo-600 rounded-lg hover:bg-indigo-700"
+          >
+            <FaPlus />
+          </button>
+
+          {/* ACTIONS */}
+          <div className="mt-6 flex gap-3">
             <button
               onClick={downloadPDF}
-              disabled={!resume.personal.name.trim()}
-              className="w-full bg-linear-to-r from-blue-500 to-purple-600 text-white py-6 rounded-2xl text-xl font-bold hover:from-blue-600 hover:to-purple-700 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+              className="px-4 py-2 bg-indigo-600 rounded-xl flex items-center gap-2 text-sm"
             >
-              <FaFilePdf className="mr-3" /> Download A4 PDF (Perfect Fit)
+              <FaFilePdf /> Download
+            </button>
+
+            <button
+              onClick={() => setResume(defaultResume)}
+              className="px-4 py-2 bg-white/10 rounded-xl text-sm"
+            >
+              Reset
             </button>
           </div>
+        </div>
 
-          {/* A4 Preview - PERFECTLY OPTIMIZED FOR SINGLE PAGE */}
-          <div className="bg-white shadow-2xl rounded-3xl p-8 lg:p-12 max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-8 text-gray-800 flex items-center justify-center">
-              <FaDownload className="mr-3 text-green-500" /> A4 Preview
-            </h2>
-            <div
-              ref={previewRef}
-              data-testid="resume-preview"
-              className="bg-white p-4 rounded-2xl border-4 border-gray-200 shadow-2xl print:border-none"
-              style={{
-                width: "595px", // EXACT A4 width
-                height: "842px", // EXACT A4 height
-                margin: "0 auto",
-                boxSizing: "border-box",
-                fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
-                fontSize: "14px",
-                lineHeight: "1.4",
-                overflow: "hidden",
-                padding: "24px",
-              }}
-            >
-              {/* Header */}
-              <div className="text-center border-b pb-2 mb-4">
-                <h1 className="text-3xl font-bold text-gray-800 mb-1 leading-tight">
-                  {resume.personal.name || "Your Name"}
-                </h1>
-                <p className="text-gray-600 text-sm leading-tight">
-                  {resume.personal.email || "email@example.com"} •{" "}
-                  {resume.personal.phone || "phone"} •{" "}
-                  {resume.personal.location}
-                </p>
+        {/* PREVIEW */}
+        <div className="bg-white rounded-2xl shadow-xl p-4 h-[90vh] overflow-y-auto text-black pdf-mode">
+          <h2 className="text-lg font-bold mb-4 text-indigo-600 flex items-center gap-2">
+            <FaDownload /> Preview
+          </h2>
+
+          <div
+            ref={previewRef}
+            className="bg-white mx-auto"
+            style={{
+              width: "210mm",
+              minHeight: "297mm",
+              padding: "15mm",
+            }}
+          >
+
+            {/* HEADER */}
+            <div className="text-center mb-4">
+              <h1 className="text-2xl font-bold uppercase">
+                {resume.personal.name || "YOUR NAME"}
+              </h1>
+              <p className="text-[18px] text-gray-700">{resume.personal.role}</p>
+
+              <div className="flex justify-center flex-wrap gap-3 text-[14px] text-gray-600 mt-2">
+                <span className="flex items-center gap-1">
+                  <Phone size={12} /> {resume.personal.phone}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Mail size={12} /> {resume.personal.email}
+                </span>
+                <span className="flex items-center gap-1">
+                  <MapPin size={12} /> {resume.personal.location}
+                </span>
               </div>
-
-              {/* Summary - Compact */}
-              {resume.summary.trim() && (
-                <section className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Professional Summary
-                  </h2>
-                  <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                    {resume.summary}
-                  </p>
-                </section>
-              )}
-
-              {/* Projects - Compact */}
-              {resume.projects.some((proj) => proj.name.trim()) && (
-                <section className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Projects
-                  </h2>
-                  {resume.projects.map((proj, idx) =>
-                    proj.name.trim() ? (
-                      <div key={idx} className="mb-3">
-                        <h3 className="font-semibold text-gray-800 text-base mb-1 leading-tight">
-                          {proj.name}
-                        </h3>
-                        <p className="text-orange-600 font-medium mb-1 text-xs">
-                          {proj.tech.trim()}
-                          {proj.link.trim() && (
-                            <>
-                              {" • "}
-                              <a
-                                href={proj.link}
-                                className="text-blue-600 hover:underline"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                View →
-                              </a>
-                            </>
-                          )}
-                        </p>
-                        <p className="text-gray-700 text-xs leading-tight">
-                          {proj.desc}
-                        </p>
-                      </div>
-                    ) : null,
-                  )}
-                </section>
-              )}
-
-              {/* Experience - Compact */}
-              {resume.experience.some((exp) => exp.company.trim()) && (
-                <section className="mb-4">
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Experience
-                  </h2>
-                  {resume.experience.map((exp, idx) =>
-                    exp.company.trim() ? (
-                      <div key={idx} className="mb-2">
-                        <h3 className="font-semibold text-gray-800 text-sm leading-tight">
-                          {exp.role.trim()}{" "}
-                          <span className="font-normal">@ {exp.company}</span>
-                        </h3>
-                        <p className="text-blue-600 font-medium text-xs mb-1">
-                          {exp.dates.trim()}
-                        </p>
-                        <p className="text-gray-700 text-xs leading-tight">
-                          {exp.desc}
-                        </p>
-                      </div>
-                    ) : null,
-                  )}
-                </section>
-              )}
-
-              {/* Education - Compact */}
-              {resume.education.some((edu) => edu.school.trim()) && (
-                <section className="mb-2">
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Education
-                  </h2>
-                  {resume.education.map((edu, idx) =>
-                    edu.school.trim() ? (
-                      <div key={idx} className="mb-2">
-                        <h3 className="font-semibold text-gray-800 text-sm leading-tight">
-                          {edu.degree.trim()}
-                        </h3>
-                        <p className="text-gray-600 text-xs">
-                          {edu.school.trim()} • {edu.dates.trim()}
-                        </p>
-                      </div>
-                    ) : null,
-                  )}
-                </section>
-              )}
-
-              {/* Skills - Compact Grid */}
-              {resume.skills.some((skill) => skill.trim()) && (
-                <section>
-                  <h2 className="text-lg font-bold text-gray-800 mb-2 border-b pb-1 uppercase tracking-wide">
-                    Skills
-                  </h2>
-                  <div className="grid grid-cols-5 sm:grid-cols-3 md:grid-cols-7 grid-rows-3 gap-1 pt-1">
-                    {resume.skills.map((skill, idx) =>
-                      skill.trim() ? (
-                        <div
-                          key={idx}
-                          className="    font-medium text-xs text-center "
-                        >
-                          {skill.trim()}
-                        </div>
-                      ) : null,
-                    )}
-                  </div>
-                </section>
-              )}
             </div>
+
+            {/* SUMMARY */}
+            {resume.summary && (
+              <Section title="Summary">{resume.summary}</Section>
+            )}
+
+            {/* EDUCATION */}
+            {resume.education.some((e) => e.school || e.degree) && (
+              <Section title="Education">
+                {resume.education.map((edu, i) => (
+                  <div key={i} className="mb-2">
+                    <div className="flex justify-between">
+                      <span className="font-semibold text-sm">
+                        {edu.school}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {edu.dates}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-700">{edu.degree}</p>
+                  </div>
+                ))}
+              </Section>
+            )}
+
+            {/* SKILLS */}
+            {resume.skills.some((s) => s.trim()) && (
+  <Section title="Skills">
+    <div className="flex flex-wrap gap-1">
+      {resume.skills.filter(Boolean).map((skill, i) => (
+        <span
+          key={i}
+          className="px-2 py-1 bg-gray-200 rounded-full text-xs"
+        >
+          {skill}
+        </span>
+      ))}
+    </div>
+
+    {/* PDF GRID VERSION (hidden on screen, visible in PDF only) */}
+    <div className="hidden print:block mt-2">
+      <div className="grid grid-cols-3 gap-x-6 gap-y-2 text-xs">
+        {resume.skills.filter(Boolean).map((skill, i) => (
+          <div key={i} className="border-b border-gray-300 pb-1">
+            {skill}
+          </div>
+        ))}
+      </div>
+    </div>
+  </Section>
+)}
+
+            {/* PROJECTS */}
+            {resume.projects.some((p) => p.name) && (
+              <Section title="Projects">
+                {resume.projects.map((p, i) => (
+                  <div key={i} className="mb-2">
+                    <p className="font-semibold text-sm">
+                      {p.name}
+                      <span className="text-gray-500 ml-2 text-xs">
+                        {p.tech}
+                      </span>
+                    </p>
+                    <p className="text-xs text-gray-700">{p.desc}</p>
+                  </div>
+                ))}
+              </Section>
+            )}
+
+            {/* EXPERIENCE */}
+            {resume.experience.some((e) => e.company || e.role) && (
+              <Section title="Experience">
+                {resume.experience.map((e, i) => (
+                  <div key={i} className="mb-2">
+                    <p className="font-semibold text-sm">
+                      {e.role} @ {e.company}
+                    </p>
+                    <p className="text-xs text-gray-500">{e.dates}</p>
+                    <p className="text-xs text-gray-700">{e.desc}</p>
+                  </div>
+                ))}
+              </Section>
+            )}
           </div>
         </div>
+        
       </div>
     </div>
   );

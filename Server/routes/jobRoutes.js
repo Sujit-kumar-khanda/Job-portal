@@ -14,23 +14,39 @@ import { protect, isEmployer, isSeeker } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Public
+// =========================
+// PUBLIC ROUTES
+// =========================
 router.get("/all", getAllJobs);
 
-// Employer routes
+// =========================
+// SEEKER ROUTES (PUT ABOVE :id)
+// =========================
+router.get("/applications/me", protect, isSeeker, getMyApplications);
+
+router.post("/:jobId/apply", protect, isSeeker, applyToJob);
+
+// =========================
+// EMPLOYER ROUTES
+// =========================
 router.post("/", protect, isEmployer, createJob);
+
 router.get("/employer", protect, isEmployer, getEmployerJobs);
+
 router.get(
   "/employer/applications",
   protect,
   isEmployer,
   getEmployerApplications
 );
+
+// =========================
+// DELETE (keep before :id)
+// =========================
 router.delete("/:id", protect, isEmployer, deleteJob);
 
-// Seeker routes
+// =========================
+// PUBLIC (ALWAYS LAST)
+// =========================
 router.get("/:id", getJobById);
-router.post("/:id/apply", protect, isSeeker, applyToJob);
-router.get("/applications/me", protect, isSeeker, getMyApplications);
-
 export default router;

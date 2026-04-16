@@ -2,79 +2,64 @@ import React, {
   createContext,
   useContext,
   useState,
-  useMemo,
   useEffect,
 } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import api from "./api"; // Centralized API instance with baseURL and interceptors
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const navigate = useNavigate();
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
+
+  const [token, setToken] = useState(
+  sessionStorage.getItem("token") || ""
+);
+ 
+
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
-  const api = useMemo(() => {
-    const instance = axios.create({
-      baseURL: "http://localhost:5000/api",
-    });
+  const role = user?.role;
+  
 
-    instance.interceptors.request.use((config) => {
-      if (token) config.headers.Authorization = `Bearer ${token}`;
-      return config;
-    });
+  // 🔐 Save token
+  const saveToken = (t) => {
+  setToken(t);
+  sessionStorage.setItem("token", t);
+};
 
-    instance.interceptors.response.use(
-      (res) => res,
-      (err) => {
-        if (err.response?.status === 401) {
-          const msg = err.response?.data?.message || "Unauthorized request";
-          toast.error(msg);
+  // 🚪 Logout
+  const logout = () => {
+    setToken("");
+    setUser(null);
+    sessionStorage.removeItem("token");
+    navigate("/login");
+    toast.success("Logged out");
+  };
 
-          if (
-            msg.toLowerCase().includes("token expired") ||
-            msg.toLowerCase().includes("invalid token")
-          ) {
-            setToken("");
-            setUser(null);
-            localStorage.removeItem("token");
-            navigate("/login");
-          }
-        }
-        return Promise.reject(err);
-      },
-    );
-
-    return instance;
-  }, [token, navigate]);
-
+  // 👤 Fetch logged-in user
   useEffect(() => {
-    if (!token) {
-      setUser(null);
-      setLoadingUser(false);
-      return;
-    }
-
     const fetchUser = async () => {
+      
+      setLoadingUser(true);
+      const token = sessionStorage.getItem("token");
+      if (!token) {
+        setUser(null);
+        setLoadingUser(false);
+        return;
+      }
+
       try {
         const res = await api.get("/auth/me");
         setUser(res.data.user);
       } catch (err) {
-        console.log("Failed to fetch user:", err.response?.data?.message);
+        console.log("User fetch error:", err.response?.data?.message);
 
-        if (
-          err.response?.data?.message
-            ?.toLowerCase()
-            .includes("token expired") ||
-          err.response?.data?.message?.toLowerCase().includes("invalid token")
-        ) {
-          setToken("");
-          setUser(null);
-          localStorage.removeItem("token");
-          navigate("/login");
+        // ❌ Invalid / expired token handling
+        if (err.response?.status === 401) {
+          logout();
         }
       } finally {
         setLoadingUser(false);
@@ -82,32 +67,18 @@ export const AppProvider = ({ children }) => {
     };
 
     fetchUser();
-  }, [token, api, navigate]);
-
-  const saveToken = (t) => {
-    setToken(t);
-    localStorage.setItem("token", t);
-  };
-
-  const logout = () => {
-    setToken("");
-    setUser(null);
-    localStorage.removeItem("token");
-    navigate("/login");
-    toast.success("Logged out");
-  };
+  }, [token]);
 
   return (
     <AppContext.Provider
       value={{
         api,
         token,
+        role,
         user,
         setUser,
         saveToken,
         logout,
-        toast,
-        navigate,
         loadingUser,
       }}
     >

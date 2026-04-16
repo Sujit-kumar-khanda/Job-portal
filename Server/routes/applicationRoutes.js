@@ -1,5 +1,7 @@
 import express from "express";
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { isEmployer, isSeeker } from "../middleware/auth.js";
+
 import {
   applyToJob,
   getMyApplications,
@@ -9,16 +11,44 @@ import {
 
 const router = express.Router();
 
-// Apply for a job (Seeker)
-router.post("/apply/:jobId", authMiddleware, applyToJob);
+// =========================
+// SEEKER ROUTES
+// =========================
 
-// Get my applications (Seeker)
-router.get("/me", authMiddleware, getMyApplications);
+// Apply for a job (ONLY SEEKER)
+router.post(
+  "/apply/:jobId",
+  authMiddleware,
+  isSeeker,
+  applyToJob
+);
 
-// Get all applications for a specific job (Employer)
-router.get("/job/:jobId", authMiddleware, getApplicationsForJob);
+// Get my applications (ONLY SEEKER)
+router.get(
+  "/me",
+  authMiddleware,
+  isSeeker,
+  getMyApplications
+);
 
-// Update status of an application (Employer)
-router.patch("/:applicationId/status", authMiddleware, updateApplicationStatus);
+// =========================
+// EMPLOYER ROUTES
+// =========================
+
+// Get applications for a job (ONLY EMPLOYER)
+router.get(
+  "/job/:jobId",
+  authMiddleware,
+  isEmployer,
+  getApplicationsForJob
+);
+
+// Update application status (ONLY EMPLOYER)
+router.patch(
+  "/:applicationId/status",
+  authMiddleware,
+  isEmployer,
+  updateApplicationStatus
+);
 
 export default router;

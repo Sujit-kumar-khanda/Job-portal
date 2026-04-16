@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useAppContext } from "../context/AppContext";
 import { PlusCircle, List, Users, Briefcase } from "lucide-react";
 import { useEmployerDashboard } from "../components/hooks/employerHooks/useEmployerDashboard";
@@ -6,27 +6,23 @@ import { useEmployerDashboard } from "../components/hooks/employerHooks/useEmplo
 export default function EmployerDashboard() {
   const { api, user, loadingUser, toast } = useAppContext();
 
-  // ================= CUSTOM HOOK =================
   const {
-    skillInput, // for skill input field
-    suggestions, // for skill suggestions dropdown
-    selectedSkills, // for storing selected skills as an array of strings
-    active, // "post" or "myjobs"
-    formData, // form data for posting a job
-    jobs, // jobs posted by employer along with applicants
-    loading, // for post job button loading state
-    setActive, // to switch between "post" and "myjobs" views
-    setFormData, // to update form data for posting a job
-    setSelectedSkills, // to update selected skills for a job
-
-
-    // ================= HANDLERS =================
-    handleSkillChange, // to handle changes in skill input and show suggestions
-    addSkill, // to add a skill from suggestions to selected skills
-    removeSkill, // to remove a skill from selected skills
-    handlePostJob, // to handle posting a new job
-    fetchJobs, // to fetch jobs posted by employer along with applicants
-    handleStatusChange, // to handle status change of an application (select/reject)
+    skillInput,
+    suggestions,
+    selectedSkills,
+    active,
+    formData,
+    jobs,
+    loading,
+    setActive,
+    setFormData,
+    setSelectedSkills,
+    handleSkillChange,
+    addSkill,
+    removeSkill,
+    handlePostJob,
+    fetchJobs,
+    handleStatusChange,
   } = useEmployerDashboard(api, user, loadingUser, toast);
 
   if (loadingUser)
@@ -38,79 +34,83 @@ export default function EmployerDashboard() {
         Access denied
       </p>
     );
+
   return (
-    <div className="pt-24 min-h-screen bg-linear-to-br from-indigo-100 via-white to-purple-100 flex">
+    <div className="pt-24 min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex">
+
       {/* ================= SIDEBAR ================= */}
-      <aside className="w-72 fixed left-0 top-24 h-[calc(100vh-7rem)] bg-white/70 backdrop-blur-xl rounded-tr-3xl rounded-br-3xl p-6 shadow-xl border border-gray-100">
+      <aside className="w-72 fixed left-0 top-24 h-[calc(100vh-6rem)] bg-white/80 backdrop-blur-xl border-r border-gray-200 p-6 shadow-lg">
+
         <h3 className="text-xl font-bold text-indigo-600 mb-8">
           Employer Panel
         </h3>
 
-        {[
-          { key: "post", label: "Post Job", icon: <PlusCircle size={18} /> },
-          { key: "myjobs", label: "Applications", icon: <List size={18} /> },
-        ].map((item) => (
-          <button
-            key={item.key}
-            onClick={() => setActive(item.key)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl w-full mb-3 transition ${
-              active === item.key
-                ? "bg-indigo-600 text-white shadow-md"
-                : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-600"
-            }`}
-          >
-            {item.icon}
-            {item.label}
-          </button>
-        ))}
+        <div className="space-y-3">
+          {[
+            { key: "post", label: "Post Job", icon: <PlusCircle size={18} /> },
+            { key: "myjobs", label: "Applications", icon: <List size={18} /> },
+          ].map((item) => (
+            <button
+              key={item.key}
+              onClick={() => setActive(item.key)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition font-medium ${
+                active === item.key
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-gray-600 hover:bg-indigo-50"
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
 
-        <button
-          onClick={fetchJobs}
-          className="mt-6 flex items-center gap-3 px-4 py-3 w-full rounded-xl bg-white border border-gray-200 hover:shadow-md transition"
-        >
-          <Users size={18} className="text-indigo-600" />
-          Refresh
-        </button>
+          
+        </div>
       </aside>
 
       {/* ================= MAIN ================= */}
-      <main className="ml-72 flex-1 p-8 max-w-6xl">
+      <main className="ml-72 flex-1 p-6 md:p-10 max-w-6xl">
+
         {/* ================= POST JOB ================= */}
         {active === "post" && (
-          <div className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 md:p-8">
+
             <h2 className="text-2xl font-semibold text-indigo-600 mb-6 flex items-center gap-2">
-              <Briefcase size={22} /> Post a New Job
+              <Briefcase size={22} />
+              Post a New Job
             </h2>
 
             <form className="space-y-4" onSubmit={handlePostJob}>
+
               {["title", "location", "salary"].map((field) => (
                 <input
                   key={field}
-                  placeholder={field}
                   name={field}
                   value={formData[field]}
                   onChange={(e) =>
                     setFormData({ ...formData, [field]: e.target.value })
                   }
-                  className="w-full p-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-400 outline-none"
+                  placeholder={field}
+                  className="w-full p-4 rounded-xl border focus:ring-2 focus:ring-indigo-400 outline-none"
                 />
               ))}
-              {/* skills input with suggestions */}
+
+              {/* SKILLS */}
               <div className="relative">
+
                 <input
-                  type="text"
                   value={skillInput}
                   onChange={handleSkillChange}
                   placeholder="Enter skills (React, Node...)"
-                  className="w-full p-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-400 outline-none"
+                  className="w-full p-4 rounded-xl border focus:ring-2 focus:ring-indigo-400 outline-none"
                 />
 
-                {/* Suggestions */}
+                {/* suggestions */}
                 {suggestions.length > 0 && (
-                  <div className="absolute z-10 w-full bg-white border rounded-xl mt-1 shadow-lg max-h-48 overflow-y-auto">
-                    {suggestions.map((skill, index) => (
+                  <div className="absolute z-10 w-full bg-white border rounded-xl mt-1 shadow-lg max-h-44 overflow-y-auto">
+                    {suggestions.map((skill, i) => (
                       <div
-                        key={index}
+                        key={i}
                         onClick={() => addSkill(skill)}
                         className="px-4 py-2 hover:bg-indigo-50 cursor-pointer"
                       >
@@ -120,36 +120,31 @@ export default function EmployerDashboard() {
                   </div>
                 )}
 
-                {/* Selected Skills */}
+                {/* selected skills */}
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {selectedSkills.map((skill, index) => (
+                  {selectedSkills.map((skill, i) => (
                     <span
-                      key={index}
-                      className="flex items-center gap-2 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm"
+                      key={i}
+                      className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm flex items-center gap-2"
                     >
                       {skill}
-                      <button
-                        type="button"
-                        onClick={() => removeSkill(skill)}
-                        className="text-xs hover:text-red-500"
-                      >
-                        ✕
-                      </button>
+                      <button onClick={() => removeSkill(skill)}>✕</button>
                     </span>
                   ))}
                 </div>
               </div>
-              {/* description textarea */}
+
               <textarea
                 rows={5}
-                placeholder="Job Description"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="w-full p-4 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-400 outline-none"
+                placeholder="Job Description"
+                className="w-full p-4 rounded-xl border focus:ring-2 focus:ring-indigo-400 outline-none"
               />
-              <div className="flex justify-end gap-4">
+
+              <div className="flex justify-end gap-3">
                 <button
                   type="reset"
                   onClick={() => {
@@ -162,7 +157,7 @@ export default function EmployerDashboard() {
                     });
                     setSelectedSkills([]);
                   }}
-                  className="px-5 py-2 rounded-xl border border-gray-300 hover:bg-gray-100"
+                  className="px-5 py-2 rounded-xl border hover:bg-gray-50"
                 >
                   Reset
                 </button>
@@ -170,7 +165,7 @@ export default function EmployerDashboard() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                  className="px-6 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700"
                 >
                   {loading ? "Posting..." : "Post Job"}
                 </button>
@@ -182,43 +177,41 @@ export default function EmployerDashboard() {
         {/* ================= APPLICATIONS ================= */}
         {active === "myjobs" && (
           <div className="space-y-6">
+
             {jobs.length === 0 ? (
               <div className="bg-white p-6 rounded-2xl shadow text-center text-gray-500">
-                No applications received yet.
+                No applications received yet
               </div>
             ) : (
               jobs.map((job) => (
                 <div
                   key={job.jobId}
-                  className="bg-white rounded-3xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition"
+                  className="bg-white rounded-2xl p-6 border shadow-sm"
                 >
                   <h3 className="text-lg font-semibold text-indigo-600 mb-4">
                     {job.title}
-                    <span className="ml-2 text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 ml-2">
                       ({job.totalApplicants} applicants)
                     </span>
                   </h3>
 
                   {job.applicants.length === 0 ? (
-                    <p className="text-sm text-gray-500">No applicants yet</p>
+                    <p className="text-gray-500 text-sm">No applicants yet</p>
                   ) : (
                     job.applicants.map((app) => (
                       <div
                         key={app.applicationId}
-                        className="flex justify-between items-center p-4 rounded-xl border border-gray-100 mb-3 bg-gray-50 hover:shadow-sm"
+                        className="flex justify-between items-center p-4 mb-3 rounded-xl border bg-gray-50"
                       >
                         <div>
-                          <p className="font-medium text-gray-800">
-                            {app.name}
-                          </p>
+                          <p className="font-medium">{app.name}</p>
                           <p className="text-sm text-gray-500">{app.email}</p>
 
                           {app.resume && (
                             <a
                               href={app.resume}
                               target="_blank"
-                              rel="noreferrer"
-                              className="text-indigo-600 text-sm underline hover:text-indigo-800"
+                              className="text-indigo-600 text-sm underline"
                             >
                               View Resume
                             </a>
@@ -226,43 +219,35 @@ export default function EmployerDashboard() {
                         </div>
 
                         <div className="flex gap-2">
-                          {app.status === "pending" && (
+                          {app.status === "pending" ? (
                             <>
                               <button
                                 onClick={() =>
-                                  handleStatusChange(
-                                    app.applicationId,
-                                    "selected",
-                                  )
+                                  handleStatusChange(app.applicationId, "selected")
                                 }
-                                className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg"
+                                className="px-3 py-1 bg-green-500 text-white rounded-lg"
                               >
                                 Select
                               </button>
 
                               <button
                                 onClick={() =>
-                                  handleStatusChange(
-                                    app.applicationId,
-                                    "rejected",
-                                  )
+                                  handleStatusChange(app.applicationId, "rejected")
                                 }
-                                className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg"
+                                className="px-3 py-1 bg-red-500 text-white rounded-lg"
                               >
                                 Reject
                               </button>
                             </>
-                          )}
-
-                          {app.status === "selected" && (
-                            <span className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-full">
-                              Selected
-                            </span>
-                          )}
-
-                          {app.status === "rejected" && (
-                            <span className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded-full">
-                              Rejected
+                          ) : (
+                            <span
+                              className={`px-3 py-1 text-sm rounded-full ${
+                                app.status === "selected"
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {app.status}
                             </span>
                           )}
                         </div>

@@ -69,41 +69,28 @@ const Navbar = () => {
   // ✅ PROFILE PHOTO FIX (IMPORTANT)
   // ===============================
 
-  const fallbackAvatar =
-    "https://www.gravatar.com/avatar/?d=mp&f=y";
+  const fallbackAvatar = "https://www.gravatar.com/avatar/?d=mp&f=y";
 
   const profilePhoto =
-    typeof user?.profilePhoto === "string" &&
-    user.profilePhoto.trim() !== ""
+    typeof user?.profilePhoto === "string" && user.profilePhoto.trim() !== ""
       ? user.profilePhoto
       : fallbackAvatar;
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200">
-      <div className="max-w-8xl mx-auto px-6 py-4 flex items-center justify-evenly">
-
+      <div className="max-w-8xl mx-auto px-15 py-4 flex items-center justify-between">
         {/* LOGO */}
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="p-2 rounded-xl bg-indigo-100 group-hover:bg-indigo-200 transition">
-            <Briefcase className="w-6 h-6 text-indigo-600" />
+          <div className="p-2 rounded-xl bg-white/10 group-hover:bg-white/20 transition">
+            <Briefcase className="w-6 h-6 text-indigo-400" />
           </div>
-          <span className="text-xl font-extrabold text-gray-800">
-            JobSeeker
-          </span>
+          <span className="text-xl font-extrabold text-blue-600 heading">JobSeeker</span>
         </Link>
 
-        {/* SEARCH */}
-        <div className="relative flex items-center w-full max-w-lg mx-auto">
-          <input
-            type="search"
-            placeholder="Search jobs..."
-            className="w-full px-4 py-2 rounded-full border border-gray-300 outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+        
 
         {/* DESKTOP NAV */}
-        <div className="hidden md:flex items-center gap-10">
-
+        <div className="hidden md:flex items-center gap-12">
           {navLink("/", "Home")}
           {navLink("/jobs", "Jobs")}
           {!token && navLink("/why-us", "Why Us?")}
@@ -123,16 +110,11 @@ const Navbar = () => {
             />
 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-3 w-64 bg-white shadow-xl rounded-2xl p-5 border">
-
+              <div className="absolute right-0 mt-4 w-64 bg-white/80 backdrop-blur-lg shadow-xl rounded-2xl p-5 border">
                 {token ? (
                   <>
-                    <p className="font-semibold">
-                      {user?.name || "User"}
-                    </p>
-                    <p className="text-sm text-gray-500 mb-3">
-                      {user?.email}
-                    </p>
+                    <p className="font-semibold">{user?.name || "User"}</p>
+                    <p className="text-sm text-gray-500 mb-3">{user?.email}</p>
 
                     <Link
                       to={
@@ -163,9 +145,7 @@ const Navbar = () => {
                   </>
                 ) : (
                   <>
-                    <p className="text-center text-gray-500 mb-4">
-                      Welcome 👋
-                    </p>
+                    <p className="text-center text-gray-500 mb-4">Welcome 👋</p>
 
                     <Link
                       to="/login"
@@ -188,28 +168,33 @@ const Navbar = () => {
         </div>
 
         {/* MOBILE BUTTON */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden p-2"
-        >
+        <button onClick={() => setOpen(!open)} className="md:hidden p-2">
           {open ? <X size={26} /> : <Menu size={26} />}
         </button>
       </div>
 
       {/* MOBILE MENU */}
-      <div className={`md:hidden ${open ? "block" : "hidden"} bg-white border-t px-6 py-4`}>
+      <div
+        className={`md:hidden ${open ? "block" : "hidden"} bg-white border-t px-6 py-4`}
+      >
         {navLink("/", "Home")}
         {navLink("/jobs", "Jobs")}
         {navLink("/about", "About")}
 
         {!token ? (
           <>
-            <Link to="/login" className="block py-2">Login</Link>
-            <Link to="/signup" className="block py-2">Sign Up</Link>
+            <Link to="/login" className="block py-2">
+              Login
+            </Link>
+            <Link to="/signup" className="block py-2">
+              Sign Up
+            </Link>
           </>
         ) : (
           <>
-            <Link to="/seeker-dashboard" className="block py-2">Dashboard</Link>
+            <Link to="/seeker-dashboard" className="block py-2">
+              Dashboard
+            </Link>
             <button onClick={logout} className="text-red-500 py-2">
               Logout
             </button>

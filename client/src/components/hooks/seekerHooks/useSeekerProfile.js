@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-
+import toast from "react-hot-toast";
 const SKILLS = [
   "JavaScript", "React", "Node.js", "Express", "MongoDB",
   "HTML", "CSS", "Tailwind CSS", "Redux", "TypeScript",
@@ -9,15 +9,19 @@ const SKILLS = [
   "Problem Solving", "C++",
 ];
 
-export const useSeekerProfile = (api, _user, setUser, toast) => {
-  const baseURL = import.meta?.env?.VITE_API_URL || "http://localhost:5000";
+export const useSeekerProfile = (api, user, setUser) => {
+  const baseURL =
+    import.meta?.env?.VITE_API_URL || "http://localhost:5000";
 
-  const getFileUrl = (path) => {
-    if (!path) return null;
-    return path.startsWith("http")
-      ? path
-      : `${baseURL}${path}`;
-  };
+  const getFileUrl = useCallback(
+    (path) => {
+      if (!path) return null;
+      return path.startsWith("http")
+        ? path
+        : `${baseURL}${path}`;
+    },
+    [baseURL]
+  );
 
   const [skillInput, setSkillInput] = useState("");
   const [suggestions, setSuggestions] = useState([]);
@@ -37,51 +41,60 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
     experience: "",
   });
 
-  // GET PROFILE
+  // ================= FETCH PROFILE =================
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         const res = await api.get("/profile/me");
+
         setSavedProfile(res.data.user);
         setUser(res.data.user);
-      } catch {
-        toast.error("Failed to load profile");
+      } catch (err) {
+        toast.error(
+          err?.response?.data?.message || "Failed to load profile"
+        );
       }
     };
+
     fetchProfile();
   }, [api, setUser, toast]);
 
-  // PREFILL
+  // ================= PREFILL =================
   useEffect(() => {
-    if (mode === "edit" && savedProfile && !isManualEdit) {
-      setForm({
-        name: savedProfile.name || "",
-        phone: savedProfile.phone || "",
-        headline: savedProfile.headline || "",
-        education: savedProfile.education || "",
-        experience: savedProfile.experience || "",
-      });
+    if (mode !== "edit" || !savedProfile || isManualEdit) return;
 
-      setSelectedSkills(
-        (savedProfile.skills || []).filter((s) => s && s.trim() !== "")
-      );
-    }
+    setForm({
+      name: savedProfile.name || "",
+      phone: savedProfile.phone || "",
+      headline: savedProfile.headline || "",
+      education: savedProfile.education || "",
+      experience: savedProfile.experience || "",
+    });
+
+    setSelectedSkills(
+      Array.isArray(savedProfile.skills)
+        ? savedProfile.skills.filter(Boolean)
+        : []
+    );
   }, [mode, savedProfile, isManualEdit]);
 
-  // FORM CHANGE
+  // ================= FORM CHANGE =================
   const handleOnchange = useCallback((e) => {
+    const { name, value } = e.target;
+
     setIsManualEdit(true);
     setForm((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value,
+      [name]: value,
     }));
   }, []);
 
-  // SKILL SEARCH
+  // ================= SKILL SEARCH =================
   const handleSkillChange = useCallback(
     (e) => {
-      setIsManualEdit(true);
       const value = e.target.value;
+
+      setIsManualEdit(true);
       setSkillInput(value);
 
       if (!value.trim()) {
@@ -92,7 +105,9 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
       const filtered = SKILLS.filter(
         (skill) =>
           skill.toLowerCase().includes(value.toLowerCase()) &&
-          !selectedSkills.includes(skill)
+          !selectedSkills.some(
+            (s) => s.toLowerCase() === skill.toLowerCase()
+          )
       );
 
       setSuggestions(filtered);
@@ -116,18 +131,22 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
   }, []);
 
   const removeSkill = useCallback((skill) => {
-    setSelectedSkills((prev) => prev.filter((s) => s !== skill));
+    setSelectedSkills((prev) =>
+      prev.filter((s) => s !== skill)
+    );
   }, []);
 
-  // SAVE PROFILE
+  // ================= SAVE PROFILE =================
   const handleSave = useCallback(
     async (e) => {
       e.preventDefault();
 
-      if (!form.name.trim()) return toast.error("Name required");
+      if (!form.name.trim()) {
+        return toast.error("Name required");
+      }
 
-      const phoneRegex = /^[0-9]{10}$/;
-      if (form.phone && !phoneRegex.test(form.phone.replace(/\D/g, ""))) {
+      const phoneDigits = form.phone?.replace(/\D/g, "");
+      if (form.phone && phoneDigits.length !== 10) {
         return toast.error("Enter valid 10-digit phone");
       }
 
@@ -140,14 +159,17 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
         };
 
         const res = await api.post("/profile/update", payload);
-        
 
         setSavedProfile(res.data.user);
         setUser(res.data.user);
+
         toast.success("Profile updated");
         setMode("details");
+        setIsManualEdit(false);
       } catch (err) {
-        toast.error("Update failed");
+        toast.error(
+          err?.response?.data?.message || "Update failed"
+        );
       } finally {
         setLoading(false);
       }
@@ -155,65 +177,71 @@ export const useSeekerProfile = (api, _user, setUser, toast) => {
     [form, selectedSkills, api, setUser, toast]
   );
 
-  // FILE UPLOAD (FIXED)
-const handleFileUpload = async (e, type) => {
-  const file = e.target?.files?.[0];
-  if (!file) return toast.error("No file selected");
+  // ================= FILE UPLOAD =================
+  const handleFileUpload = useCallback(
+    async (e, type) => {
+      const file = e.target?.files?.[0];
+      if (!file) return toast.error("No file selected");
 
-  const fd = new FormData();
-  if (type === "resume") {
-  fd.append("resume", file);
-} else {
-  fd.append("photo", file);
-}
+      const fd = new FormData();
+      fd.append(type === "resume" ? "resume" : "photo", file);
 
-  const endpoint =
-    type === "resume"
-      ? "/profile/upload-resume"
-      : "/profile/upload-photo";
+      const endpoint =
+        type === "resume"
+          ? "/profile/upload-resume"
+          : "/profile/upload-photo";
 
-  try {
-    setUploading(true);
+      try {
+        setUploading(true);
+        setFileInputKey((prev) => prev + 1);
 
-    const res = await api.post(endpoint, fd); // ✅ FIXED HERE
+        const res = await api.post(endpoint, fd);
 
-    const url = res.data.url || res.data.profilePhoto;
+        const url =
+          res.data.url ||
+          res.data.profilePhoto ||
+          res.data.resume;
 
-    setSavedProfile((prev) => ({
-      ...prev,
-      ...(type === "resume"
-        ? { resume: url }
-        : { profilePhoto: url }),
-    }));
+        setSavedProfile((prev) => ({
+          ...prev,
+          ...(type === "resume"
+            ? { resume: url }
+            : { profilePhoto: url }),
+        }));
 
-    setUser((prev) => ({
-      ...prev,
-      ...(type === "resume"
-        ? { resume: url }
-        : { profilePhoto: url }),
-    }));
+        setUser((prev) => ({
+          ...prev,
+          ...(type === "resume"
+            ? { resume: url }
+            : { profilePhoto: url }),
+        }));
 
-    toast.success(`${type} uploaded`);
-  } catch (err) {
-    console.log(err.response?.data || err.message);
-    toast.error(`${type} upload failed`);
-  } finally {
-    setUploading(false);
-  }
-};
+        toast.success(`${type} uploaded`);
+      } catch (err) {
+        console.error(err);
+        toast.error(`${type} upload failed`);
+      } finally {
+        setUploading(false);
+      }
+    },
+    [api, setUser, toast]
+  );
 
-  // COMPLETENESS
+  // ================= COMPLETENESS =================
+  const fields = [
+    savedProfile?.name,
+    savedProfile?.phone,
+    savedProfile?.headline,
+    savedProfile?.education,
+    savedProfile?.experience,
+    savedProfile?.skills?.length > 0,
+    savedProfile?.profilePhoto,
+    savedProfile?.resume,
+  ];
+
   const completeness = savedProfile
     ? Math.round(
-        ([
-          savedProfile.name,
-          savedProfile.phone,
-          savedProfile.skills?.length,
-          savedProfile.education,
-          savedProfile.experience,
-        ].filter(Boolean).length /
-          5) *
-          100
+        (fields.filter(Boolean).length / fields.length) * 100
       )
     : 0;
 

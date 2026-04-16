@@ -11,12 +11,25 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+// =========================
+// AUTH ROUTES
+// =========================
 router.post("/register", register);
 router.post("/login", login);
+
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 
-// ✅ Protected route to get current logged-in user
+// =========================
+// PROTECTED ROUTES
+// =========================
 router.get("/me", authMiddleware, getMe);
+
+// =========================
+// OPTIONAL (RECOMMENDED)
+// =========================
+router.post("/logout", (req, res) => {
+  return res.json({ message: "Logged out successfully" });
+});
 
 export default router;
