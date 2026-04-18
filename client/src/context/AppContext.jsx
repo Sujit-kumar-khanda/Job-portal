@@ -44,7 +44,6 @@ export const AppProvider = ({ children }) => {
     const fetchUser = async () => {
       
       setLoadingUser(true);
-      const token = sessionStorage.getItem("token");
       if (!token) {
         setUser(null);
         setLoadingUser(false);

@@ -1,162 +1,126 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Briefcase, Menu, X } from "lucide-react";
-import { useAppContext } from "../context/AppContext.jsx";
+import { useAppContext } from "../context/AppContext";
 
-const Navbar = () => {
+export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
+  const [drop, setDrop] = useState(false);
   const { token, user, logout } = useAppContext();
-
   const location = useLocation();
-  const dropdownRef = useRef(null);
+  const ref = useRef();
 
-  // Close menus on route change
-  useEffect(() => {
-    setOpen(false);
-    setDropdownOpen(false);
-  }, [location.pathname]);
+  const links = [
+    { to: "/", label: "Home" },
+    { to: "/jobs", label: "Jobs" },
+    { to: "/about", label: "About" },
+  ];
 
-  // Outside click
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // ESC close
-  useEffect(() => {
-    if (!dropdownOpen) return;
-
-    const handleEsc = (e) => {
-      if (e.key === "Escape") setDropdownOpen(false);
-    };
-
-    document.addEventListener("keydown", handleEsc);
-    return () => document.removeEventListener("keydown", handleEsc);
-  }, [dropdownOpen]);
-
-  // Active link
-  const isActivePath = (to) =>
+  const isActive = (to) =>
     to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
 
-  const navLink = (to, label) => {
-    const isActive = isActivePath(to);
+  // close on route change
+  useEffect(() => setOpen(false), [location.pathname]);
 
-    return (
-      <Link
-        to={to}
-        onClick={() => setOpen(false)}
-        className={`relative px-1 text-sm font-medium transition ${
-          isActive ? "text-indigo-600" : "text-gray-700 hover:text-indigo-600"
-        }`}
-      >
-        {label}
-        {isActive && (
-          <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-indigo-600 rounded-full" />
-        )}
-      </Link>
-    );
-  };
+  // outside click
+  useEffect(() => {
+    const fn = (e) => !ref.current?.contains(e.target) && setDrop(false);
+    document.addEventListener("mousedown", fn);
+    return () => document.removeEventListener("mousedown", fn);
+  }, []);
 
-  // ===============================
-  // ✅ PROFILE PHOTO FIX (IMPORTANT)
-  // ===============================
-
-  const fallbackAvatar = "https://www.gravatar.com/avatar/?d=mp&f=y";
-
-  const profilePhoto =
-    typeof user?.profilePhoto === "string" && user.profilePhoto.trim() !== ""
-      ? user.profilePhoto
-      : fallbackAvatar;
+  const avatar =
+    user?.profilePhoto?.trim() || "https://www.gravatar.com/avatar/?d=mp";
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200">
-      <div className="max-w-8xl mx-auto px-15 py-4 flex items-center justify-between">
+    <nav className="fixed top-0 w-full z-50 bg-[#070A12]/80 backdrop-blur-xl border-b border-white/10">
+      <div className="w-full px-6 lg:px-12 py-4 flex justify-between items-center">
+
         {/* LOGO */}
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="p-2 rounded-xl bg-white/10 group-hover:bg-white/20 transition">
-            <Briefcase className="w-6 h-6 text-indigo-400" />
-          </div>
-          <span className="text-xl font-extrabold text-blue-600 heading">JobSeeker</span>
+        <Link to="/" className="flex items-center">
+          {/* LOGO */}
+          <img
+            src="/logo.png"
+            alt="CareerLink"
+            className="h-10 w-auto object-contain mt-2 "
+          />
+
+          {/* TEXT */}
+          <span className="text-xl font-bold tracking-wide bg-gradient-to-r from-indigo-400 to-sky-400 bg-clip-text text-transparent ml-0">
+            CareerLink
+          </span>
         </Link>
 
-        
-
-        {/* DESKTOP NAV */}
-        <div className="hidden md:flex items-center gap-12">
-          {navLink("/", "Home")}
-          {navLink("/jobs", "Jobs")}
-          {!token && navLink("/why-us", "Why Us?")}
-          {navLink("/about", "About")}
+        {/* DESKTOP */}
+        <div className="hidden md:flex items-center gap-15">
+          {links.map((l) => (
+            <Link
+              key={l.to}
+              to={l.to}
+              className={`relative text-sm transition ${isActive(l.to)
+                ? "text-indigo-400"
+                : "text-gray-300 hover:text-white"
+                }`}
+            >
+              {l.label}
+              {isActive(l.to) && (
+                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-indigo-400 to-sky-400" />
+              )}
+            </Link>
+          ))}
 
           {/* PROFILE */}
-          <div className="relative" ref={dropdownRef}>
+          <div className="relative" ref={ref}>
             <img
-              src={profilePhoto}
-              alt="avatar"
-              className="w-10 h-10 rounded-full cursor-pointer border-2 border-indigo-200 hover:border-indigo-400 transition"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = fallbackAvatar;
-              }}
-              onClick={() => setDropdownOpen((prev) => !prev)}
+              src={avatar}
+              onClick={() => setDrop(!drop)}
+              className="w-10 h-10 rounded-full border border-white/10 hover:border-indigo-400 hover:scale-105 transition cursor-pointer"
             />
 
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-4 w-64 bg-white/80 backdrop-blur-lg shadow-xl rounded-2xl p-5 border">
+            {drop && (
+              <div className="absolute right-0 mt-4 w-64 bg-[#0B0F1A]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-xl">
+
                 {token ? (
                   <>
-                    <p className="font-semibold">{user?.name || "User"}</p>
-                    <p className="text-sm text-gray-500 mb-3">{user?.email}</p>
+                    {/* USER INFO */}
+                    <div className="mb-4">
+                      <p className="font-semibold text-white">
+                        {user?.name || "User"}
+                      </p>
+                      <p className="text-sm text-gray-400 truncate">
+                        {user?.email}
+                      </p>
+                    </div>
 
-                    <Link
-                      to={
-                        user?.role === "employer"
-                          ? "/employer-dashboard"
-                          : "/seeker-dashboard"
-                      }
-                      className="block px-3 py-2 rounded hover:bg-indigo-50"
-                    >
-                      Dashboard
-                    </Link>
-
-                    {user?.role === "employer" && (
+                    {/* MENU */}
+                    <div className="flex flex-col gap-1">
                       <Link
-                        to="/employer-profile"
-                        className="block px-3 py-2 rounded hover:bg-indigo-50"
+                        to="/seeker-dashboard"
+                        className="px-3 py-2 rounded-lg text-gray-300 hover:bg-white/5 hover:text-white transition"
                       >
-                        Profile
+                        Dashboard
                       </Link>
-                    )}
 
-                    <button
-                      onClick={logout}
-                      className="w-full text-left mt-3 px-3 py-2 text-red-500 hover:bg-red-50 rounded"
-                    >
-                      Logout
-                    </button>
+                      <button
+                        onClick={logout}
+                        className="text-left px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition"
+                      >
+                        Logout
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
-                    <p className="text-center text-gray-500 mb-4">Welcome 👋</p>
-
                     <Link
                       to="/login"
-                      className="block text-center border border-indigo-600 text-indigo-600 py-2 rounded mb-2"
+                      className="block text-center border border-indigo-500 text-indigo-400 py-2 rounded-lg mb-2"
                     >
                       Login
                     </Link>
 
                     <Link
                       to="/signup"
-                      className="block text-center bg-indigo-600 text-white py-2 rounded"
+                      className="block text-center bg-indigo-500 text-white py-2 rounded-lg"
                     >
                       Sign Up
                     </Link>
@@ -167,42 +131,56 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* MOBILE BUTTON */}
-        <button onClick={() => setOpen(!open)} className="md:hidden p-2">
-          {open ? <X size={26} /> : <Menu size={26} />}
+        {/* MOBILE BTN */}
+        <button onClick={() => setOpen(!open)} className="md:hidden text-white">
+          {open ? <X size={28} /> : <Menu size={28} />}
         </button>
       </div>
 
       {/* MOBILE MENU */}
-      <div
-        className={`md:hidden ${open ? "block" : "hidden"} bg-white border-t px-6 py-4`}
-      >
-        {navLink("/", "Home")}
-        {navLink("/jobs", "Jobs")}
-        {navLink("/about", "About")}
+      {open && (
+        <div className="md:hidden px-6 py-4 bg-[#0B0F1A] border-t border-white/10 space-y-3">
 
-        {!token ? (
-          <>
-            <Link to="/login" className="block py-2">
-              Login
+          {links.map((l) => (
+            <Link
+              key={l.to}
+              to={l.to}
+              className="block py-2 text-gray-300 hover:text-white transition"
+            >
+              {l.label}
             </Link>
-            <Link to="/signup" className="block py-2">
-              Sign Up
-            </Link>
-          </>
-        ) : (
-          <>
-            <Link to="/seeker-dashboard" className="block py-2">
-              Dashboard
-            </Link>
-            <button onClick={logout} className="text-red-500 py-2">
-              Logout
-            </button>
-          </>
-        )}
-      </div>
+          ))}
+
+          <div className="border-t border-white/10 pt-3">
+            {token ? (
+              <>
+                <Link
+                  to="/seeker-dashboard"
+                  className="block py-2 text-indigo-400"
+                >
+                  Dashboard
+                </Link>
+
+                <button
+                  onClick={logout}
+                  className="text-red-400 py-2"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="block py-2 text-gray-300">
+                  Login
+                </Link>
+                <Link to="/signup" className="block py-2 text-indigo-400">
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </nav>
   );
-};
-
-export default Navbar;
+}

@@ -18,7 +18,7 @@ export default function Footer() {
             transition={{ duration: 0.6 }}
           >
             <h3 className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-sky-400 text-transparent bg-clip-text mb-4">
-              JobSeeker
+              CareerLink
             </h3>
             <p className="text-gray-400 text-sm leading-relaxed">
               Discover verified opportunities and connect with top employers. 
@@ -58,7 +58,7 @@ export default function Footer() {
               Contact
             </h4>
             <div className="text-sm text-gray-400 space-y-2">
-              <p>📧 support@jobseeker.com</p>
+              <p>📧 support@CareerLink.com</p>
               <p>📞 +91 98765 43210</p>
               <p className="text-gray-500 text-xs mt-3">
                 We usually respond within 24 hours.
@@ -72,7 +72,7 @@ export default function Footer() {
 
         {/* Bottom */}
         <div className="text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} JobSeeker. Built for modern careers.
+          © {new Date().getFullYear()} CareerLink. Built for modern careers.
         </div>
       </div>
     </footer>

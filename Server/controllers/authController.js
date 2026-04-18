@@ -5,7 +5,7 @@ import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 
 // =========================
-// TOKEN
+// TOKEN GENERATOR
 // =========================
 const generateToken = (user) => {
   return jwt.sign(
@@ -29,7 +29,9 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    const exists = await User.findOne({ email });
+    const cleanEmail = email.toLowerCase().trim();
+
+    const exists = await User.findOne({ email: cleanEmail });
     if (exists) {
       return res.status(400).json({ message: "User already exists" });
     }
@@ -38,7 +40,7 @@ export const register = async (req, res) => {
 
     const user = await User.create({
       name,
-      email,
+      email: cleanEmail,
       password: hashedPassword,
       role,
     });
@@ -61,7 +63,7 @@ export const register = async (req, res) => {
 };
 
 // =========================
-// LOGIN (FIXED)
+// LOGIN
 // =========================
 export const login = async (req, res) => {
   try {
@@ -71,14 +73,15 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    // 🔥 IMPORTANT FIX: include password
-    const user = await User.findOne({ email }).select("+password");
+    const cleanEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: cleanEmail }).select("+password");
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
 
-    if (role !== user.role) {
+    if (user.role !== role) {
       return res.status(400).json({ message: "Incorrect role selected" });
     }
 
@@ -117,13 +120,13 @@ export const getMe = async (req, res) => {
     }
 
     return res.json({ user });
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
   }
 };
 
 // =========================
-// FORGOT PASSWORD (SAFE)
+// FORGOT PASSWORD
 // =========================
 export const forgotPassword = async (req, res) => {
   try {
@@ -133,7 +136,9 @@ export const forgotPassword = async (req, res) => {
       return res.status(400).json({ message: "Email is required" });
     }
 
-    const user = await User.findOne({ email });
+    const cleanEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: cleanEmail });
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
@@ -151,36 +156,26 @@ export const forgotPassword = async (req, res) => {
 
     await user.save();
 
-    if (!process.env.FRONTEND_URL) {
-      return res.status(500).json({ message: "Frontend URL not configured" });
-    }
-
     const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
-    try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
-      await transporter.sendMail({
-        to: user.email,
-        subject: "Password Reset Request",
-        html: `
-          <h3>Password Reset Request</h3>
-          <p>Click below to reset password:</p>
-          <a href="${resetURL}">${resetURL}</a>
-          <p>This link expires in 15 minutes.</p>
-        `,
-      });
-    } catch (mailErr) {
-      return res.status(500).json({
-        message: "Email sending failed",
-      });
-    }
+    await transporter.sendMail({
+      to: user.email,
+      subject: "Password Reset Request",
+      html: `
+        <h3>Password Reset Request</h3>
+        <p>Click below to reset password:</p>
+        <a href="${resetURL}">${resetURL}</a>
+        <p>This link expires in 15 minutes.</p>
+      `,
+    });
 
     return res.json({
       message: "Password reset link sent to email",
@@ -216,8 +211,8 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "Token expired or invalid" });
     }
 
-    
-    user.password = password; // If using pre-save hook, just assign plain password
+    // ✅ FIXED: always hash password
+    user.password = await bcrypt.hash(password, 10);
 
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
@@ -229,3 +224,4 @@ export const resetPassword = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+

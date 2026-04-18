@@ -13,7 +13,7 @@ export default function SeekerProfile() {
     skillInput,
     suggestions,
     selectedSkills,
-    uploading,
+    uploading, // { resume: false, photo: false }
     loading,
     fileInputKey,
     completeness,
@@ -41,30 +41,25 @@ export default function SeekerProfile() {
 
   return (
     <div className="w-full text-white">
-
-      {/* GLASS INNER CARD (dashboard style) */}
-      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-xl transition-all">
+      <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-xl">
 
         {/* HEADER */}
         <div className="mb-6">
-          <h2 className="text-2xl font-semibold tracking-wide">
-            My Profile
-          </h2>
+          <h2 className="text-2xl font-semibold">My Profile</h2>
           <p className="text-gray-400 text-sm">
             Manage your personal and professional details
           </p>
         </div>
 
-        {/* COMPLETION BAR */}
+        {/* PROGRESS */}
         <div className="mb-6">
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>Profile Strength</span>
             <span>{completeness}%</span>
           </div>
-
           <div className="h-2 bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-indigo-500 to-sky-500 transition-all duration-500"
+              className="h-full bg-gradient-to-r from-indigo-500 to-sky-500"
               style={{ width: `${completeness}%` }}
             />
           </div>
@@ -81,7 +76,7 @@ export default function SeekerProfile() {
                 placeholder={field.toUpperCase()}
                 value={form[field]}
                 onChange={handleOnchange}
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none transition"
+                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             ))}
 
@@ -91,7 +86,16 @@ export default function SeekerProfile() {
               value={form.headline}
               onChange={handleOnchange}
               rows={2}
-              className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
+            />
+
+            <textarea
+              name="experience"
+              placeholder="Experience (internships, jobs, projects...)"
+              value={form.experience}
+              onChange={handleOnchange}
+              rows={3}
+              className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
             />
 
             {/* SKILLS */}
@@ -100,16 +104,16 @@ export default function SeekerProfile() {
                 value={skillInput}
                 onChange={handleSkillChange}
                 placeholder="Add skills"
-                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white"
               />
 
               {suggestions.length > 0 && (
-                <div className="mt-2 rounded-xl bg-black/60 border border-white/10 overflow-hidden">
+                <div className="mt-2 rounded-xl bg-[#0B0F1A]/90 border border-white/10 shadow-lg">
                   {suggestions.map((skill, i) => (
                     <div
                       key={i}
                       onClick={() => addSkill(skill)}
-                      className="p-2 hover:bg-white/10 cursor-pointer transition"
+                      className="p-2 hover:bg-white/10 cursor-pointer"
                     >
                       {skill}
                     </div>
@@ -121,7 +125,7 @@ export default function SeekerProfile() {
                 {selectedSkills.map((skill, i) => (
                   <span
                     key={i}
-                    className="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full text-sm hover:scale-105 transition"
+                    className="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full text-sm"
                   >
                     {skill}
                     <button
@@ -136,10 +140,29 @@ export default function SeekerProfile() {
               </div>
             </div>
 
-            {/* FILES */}
+            {/* ✅ UPDATED FILE UPLOAD UI ONLY */}
             <div className="flex gap-3">
-              <label className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition">
-                {uploading ? "Uploading..." : "Resume"}
+
+              {/* RESUME */}
+              <label className="flex-1 flex flex-col items-center justify-center px-4 py-3 rounded-xl bg-white/5 border border-dashed border-white/10 cursor-pointer hover:bg-white/10 hover:border-indigo-400 transition relative">
+
+                {/* STATUS */}
+                <span className="text-sm flex items-center gap-2">
+                  {uploading.resume ? (
+                    "Uploading..."
+                  ) : savedProfile.resume ? (
+                    <>
+                      Uploaded <CircleCheckBig className="w-4 h-4 text-green-400" />
+                    </>
+                  ) : (
+                    "Upload Resume"
+                  )}
+                </span>
+
+                <span className="text-xs text-gray-400 mt-1">
+                  PDF, DOC
+                </span>
+
                 <input
                   key={`resume-${fileInputKey}`}
                   hidden
@@ -149,8 +172,26 @@ export default function SeekerProfile() {
                 />
               </label>
 
-              <label className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition">
-                {uploading ? "Uploading..." : "Photo"}
+              {/* PHOTO */}
+              <label className="flex-1 flex flex-col items-center justify-center px-4 py-3 rounded-xl bg-white/5 border border-dashed border-white/10 cursor-pointer hover:bg-white/10 hover:border-indigo-400 transition relative">
+
+                {/* STATUS */}
+                <span className="text-sm flex items-center gap-2">
+                  {uploading.photo ? (
+                    "Uploading..."
+                  ) : savedProfile.profilePhoto ? (
+                    <>
+                      Uploaded <CircleCheckBig className="w-4 h-4 text-green-400" />
+                    </>
+                  ) : (
+                    "Upload Photo"
+                  )}
+                </span>
+
+                <span className="text-xs text-gray-400 mt-1">
+                  JPG, PNG
+                </span>
+
                 <input
                   key={`photo-${fileInputKey}`}
                   hidden
@@ -166,15 +207,15 @@ export default function SeekerProfile() {
               <button
                 type="button"
                 onClick={() => setMode("details")}
-                className="px-5 py-2 rounded-xl border border-white/20 hover:bg-white/10 transition"
+                className="px-5 py-2 rounded-xl border border-white/20"
               >
                 Cancel
               </button>
 
               <button
                 type="submit"
-                disabled={loading || uploading}
-                className="px-6 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 hover:scale-105 transition"
+                disabled={loading || uploading.resume || uploading.photo}
+                className="px-6 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500"
               >
                 {loading ? "Saving..." : "Save"}
               </button>
@@ -182,33 +223,28 @@ export default function SeekerProfile() {
           </form>
         )}
 
-        {/* DETAILS MODE */}
+        {/* DETAILS MODE (UNCHANGED) */}
         {mode === "details" && (
           <div className="space-y-6">
-
-            {/* TOP INFO */}
-            <div className="flex gap-6 items-center">
-
-              <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center overflow-hidden border border-white/10">
+            <div className="flex gap-6 items-center pb-4 border-b border-white/10">
+              <div className="w-20 h-20 rounded-full overflow-hidden border border-white/10">
                 {savedProfile.profilePhoto ? (
                   <img
                     src={getFileUrl(savedProfile.profilePhoto)}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-xl font-bold">
+                  <div className="flex items-center justify-center h-full text-xl font-bold">
                     {savedProfile.name?.charAt(0) || "U"}
-                  </span>
+                  </div>
                 )}
               </div>
 
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-semibold">
-                    {savedProfile.name}
-                  </h3>
+                <h3 className="text-xl font-semibold flex items-center gap-2">
+                  {savedProfile.name}
                   <CircleCheckBig className="w-5 h-5 text-green-400" />
-                </div>
+                </h3>
 
                 <p className="text-gray-400 text-sm flex gap-3 mt-1 flex-wrap">
                   <span className="flex items-center gap-1">
@@ -225,29 +261,25 @@ export default function SeekerProfile() {
               </div>
             </div>
 
-            {/* SECTIONS */}
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-white font-medium">Education</h4>
-                <p className="text-gray-400">{savedProfile.education}</p>
-              </div>
-
-              <div>
-                <h4 className="text-white font-medium">Experience</h4>
-                <p className="text-gray-400">
-                  {savedProfile.experience || "Not added"}
-                </p>
-              </div>
+            <div>
+              <h4 className="font-medium">Education</h4>
+              <p className="text-gray-400">{savedProfile.education}</p>
             </div>
 
-            {/* SKILLS */}
             <div>
-              <h4 className="text-white font-medium mb-2">Skills</h4>
+              <h4 className="font-medium">Experience</h4>
+              <p className="text-gray-400 whitespace-pre-line">
+                {savedProfile.experience || "No experience added yet"}
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-medium mb-2">Skills</h4>
               <div className="flex flex-wrap gap-2">
                 {skills.map((s, i) => (
                   <span
                     key={i}
-                    className="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full text-sm hover:scale-105 transition"
+                    className="px-3 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-full text-sm"
                   >
                     {s}
                   </span>
@@ -255,25 +287,17 @@ export default function SeekerProfile() {
               </div>
             </div>
 
-            {/* ACTIONS */}
             <div className="flex gap-3">
               <button
                 onClick={() => setMode("edit")}
-                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 transition"
+                className="px-5 py-2 rounded-xl bg-indigo-600"
               >
                 Edit Profile
               </button>
 
-              <button
-                className="px-5 py-2 rounded-xl border border-white/20 hover:bg-white/10 transition"
-              >
-                Help
-              </button>
             </div>
-
           </div>
         )}
-
       </div>
     </div>
   );

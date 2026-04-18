@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
 
 const userSchema = new mongoose.Schema(
   {
@@ -35,30 +34,11 @@ const userSchema = new mongoose.Schema(
     resume: { type: String, default: "" },
     profilePhoto: { type: String, default: "" },
 
-    // RESET PASSWORD (IMPROVED)
     resetPasswordToken: { type: String, index: true },
     resetPasswordExpire: { type: Date },
   },
   { timestamps: true }
 );
 
-
-
-/* =========================
-   HASH PASSWORD AUTOMATICALLY
-========================= */
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-
-  this.password = await bcrypt.hash(this.password, 10);
-  next();
-});
-
-/* =========================
-   COMPARE PASSWORD METHOD
-========================= */
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
 export default mongoose.model("User", userSchema);
+

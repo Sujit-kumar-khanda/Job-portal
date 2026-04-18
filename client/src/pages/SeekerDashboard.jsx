@@ -26,28 +26,27 @@ export default function SeekerDashboard() {
   return (
     <div className="min-h-screen pt-28 text-white bg-[#070A12] relative overflow-hidden">
 
-      {/* BACKGROUND GLOW */}
-      <div className="absolute top-[-100px] left-[-100px] w-[400px] h-[400px] bg-indigo-600/20 blur-[160px]" />
-      <div className="absolute bottom-[-120px] right-[-120px] w-[400px] h-[400px] bg-sky-500/20 blur-[160px]" />
+      {/* BACKGROUND GLOW (Improved Positioning) */}
+      <div className="absolute top-[-100px] left-[10%] w-[400px] h-[400px] bg-indigo-600/20 blur-[160px]" />
+      <div className="absolute bottom-[-120px] right-[10%] w-[400px] h-[400px] bg-sky-500/20 blur-[160px]" />
 
-      <div className="max-w-6xl mx-auto px-6 relative z-10">
+      <div className="w-full px-6 relative z-10">
 
         {/* GLASS CARD WRAPPER */}
-        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl p-6">
+        <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl p-8">
 
           {/* HEADER */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-wide">
+          <div className="mb-10">
+            <h1 className="text-3xl font-bold tracking-wide bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
               Seeker Dashboard
             </h1>
-            <p className="text-gray-400 mt-1">
+            <p className="text-gray-400 mt-2">
               Manage your profile, jobs & applications in one place
             </p>
           </div>
 
           {/* TABS */}
-          <div className="flex flex-wrap gap-3 mb-8">
-
+          <div className="flex flex-wrap gap-3 mb-10">
             {tabs.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
@@ -55,7 +54,7 @@ export default function SeekerDashboard() {
                 className={`group flex items-center gap-2 px-5 py-2.5 rounded-full font-medium transition-all duration-300 border
                   ${
                     tab === key
-                      ? "bg-gradient-to-r from-indigo-500 to-sky-500 text-white shadow-lg shadow-indigo-500/20 border-transparent"
+                      ? "bg-gradient-to-r from-indigo-500 to-sky-500 text-white shadow-lg shadow-indigo-500/30 border-transparent scale-105"
                       : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:scale-[1.05]"
                   }
                 `}
@@ -64,20 +63,21 @@ export default function SeekerDashboard() {
                 {label}
               </button>
             ))}
-
           </div>
 
           {/* CONTENT AREA */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur-xl min-h-[300px] transition-all">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl min-h-[400px] shadow-inner transition hover:border-white/20">
+
             <Suspense
               fallback={
-                <p className="text-center text-gray-400 animate-pulse">
-                  Loading dashboard...
+                <p className="text-center text-gray-400 animate-pulse tracking-wide">
+                  Loading your workspace...
                 </p>
               }
             >
               {ActiveComponent && <ActiveComponent />}
             </Suspense>
+
           </div>
 
         </div>
