@@ -6,9 +6,8 @@ import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post(
-  "/upload-resume",
-  authMiddleware,
+router.post("/upload-resume",
+authMiddleware,
   upload.single("file"),
   async (req, res) => {
     try {

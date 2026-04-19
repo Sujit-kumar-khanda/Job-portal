@@ -1,9 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-// =====================
 // AUTH PROTECT
-// =====================
 export const protect = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -36,9 +34,7 @@ export const protect = async (req, res, next) => {
   }
 };
 
-// =====================
 // ROLE CHECKS
-// =====================
 export const isEmployer = (req, res, next) => {
   if (!req.user || req.user.role !== "employer") {
     return res.status(403).json({ message: "Employer only" });

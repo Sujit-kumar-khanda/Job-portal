@@ -10,16 +10,12 @@ import {
 
 const router = express.Router();
 
-// =========================
 // PROFILE
-// =========================
 router.get("/me", authMiddleware, getProfile);
 
 router.post("/update", authMiddleware, updateProfile);
 
-// =========================
 // RESUME UPLOAD (FIXED ORDER)
-// =========================
 router.post(
   "/upload-resume",
   authMiddleware,
@@ -27,9 +23,7 @@ router.post(
   uploadResume
 );
 
-// =========================
 // PROFILE PHOTO UPLOAD (FIXED ORDER)
-// =========================
 router.post(
   "/upload-photo",
   authMiddleware,

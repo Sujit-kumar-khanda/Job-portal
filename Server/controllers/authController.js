@@ -4,9 +4,7 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 
-// =========================
 // TOKEN GENERATOR
-// =========================
 const generateToken = (user) => {
   return jwt.sign(
     {
@@ -18,9 +16,7 @@ const generateToken = (user) => {
   );
 };
 
-// =========================
 // REGISTER
-// =========================
 export const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -62,9 +58,7 @@ export const register = async (req, res) => {
   }
 };
 
-// =========================
 // LOGIN
-// =========================
 export const login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
@@ -108,9 +102,7 @@ export const login = async (req, res) => {
   }
 };
 
-// =========================
 // GET ME
-// =========================
 export const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -125,9 +117,7 @@ export const getMe = async (req, res) => {
   }
 };
 
-// =========================
 // FORGOT PASSWORD
-// =========================
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -185,9 +175,7 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// =========================
 // RESET PASSWORD
-// =========================
 export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;

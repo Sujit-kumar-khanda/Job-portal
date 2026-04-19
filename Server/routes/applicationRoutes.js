@@ -10,10 +10,7 @@ import {
 } from "../controllers/applicationController.js";
 
 const router = express.Router();
-
-// =========================
 // SEEKER ROUTES
-// =========================
 
 // Apply for a job (ONLY SEEKER)
 router.post(
@@ -31,9 +28,7 @@ router.get(
   getMyApplications
 );
 
-// =========================
 // EMPLOYER ROUTES
-// =========================
 
 // Get applications for a job (ONLY EMPLOYER)
 router.get(

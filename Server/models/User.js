@@ -31,7 +31,10 @@ const userSchema = new mongoose.Schema(
     education: { type: String, default: "" },
     experience: { type: String, default: "" },
 
-    resume: { type: String, default: "" },
+    resume: {
+      url: { type: String, default: "" },
+      public_id: { type: String, default: "" }
+    },
     profilePhoto: { type: String, default: "" },
 
     resetPasswordToken: { type: String, index: true },
@@ -40,5 +43,9 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+
+export default User;
+
+
 

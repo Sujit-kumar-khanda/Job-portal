@@ -1,9 +1,7 @@
 import User from "../models/User.js";
 import cloudinary from "../config/cloudinary.js";
 
-// =========================
 // GET PROFILE
-// =========================
 export const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
@@ -18,9 +16,7 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// =========================
 // UPDATE PROFILE
-// =========================
 export const updateProfile = async (req, res) => {
   try {
     const allowed = [
@@ -69,9 +65,7 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// =========================
 // CLOUDINARY UPLOAD HELPER (IMPROVED)
-// =========================
 const uploadToCloudinary = (buffer, folder, resourceType) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -92,9 +86,7 @@ const uploadToCloudinary = (buffer, folder, resourceType) => {
   });
 };
 
-// =========================
 // RESUME UPLOAD (FIXED VALIDATION)
-// =========================
 export const uploadResume = async (req, res) => {
   try {
     if (!req.file) {
@@ -134,9 +126,7 @@ export const uploadResume = async (req, res) => {
   }
 };
 
-// =========================
 // PROFILE PHOTO UPLOAD (FIXED VALIDATION)
-// =========================
 export const uploadProfilePhoto = async (req, res) => {
   try {
     if (!req.file) {
